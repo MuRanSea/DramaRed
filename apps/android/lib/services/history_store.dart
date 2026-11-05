@@ -9,11 +9,13 @@ class HistoryEntry {
     required this.title,
     required this.positionMs,
     required this.updatedAt,
+    this.seriesTitle = '',
   });
 
   final String seriesId;
   final String episodeId;
   final String title;
+  final String seriesTitle;
   final int positionMs;
   final DateTime updatedAt;
 
@@ -21,6 +23,7 @@ class HistoryEntry {
         'seriesId': seriesId,
         'episodeId': episodeId,
         'title': title,
+        'seriesTitle': seriesTitle,
         'positionMs': positionMs,
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -29,6 +32,7 @@ class HistoryEntry {
         seriesId: j['seriesId'] as String? ?? '',
         episodeId: j['episodeId'] as String? ?? '',
         title: j['title'] as String? ?? '',
+        seriesTitle: j['seriesTitle'] as String? ?? '',
         positionMs: j['positionMs'] as int? ?? 0,
         updatedAt: DateTime.tryParse(j['updatedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),
@@ -48,7 +52,16 @@ class HistoryStore {
         .toList();
   }
 
+  Future<HistoryEntry?> getBySeries(String seriesId) async {
+    final items = await list();
+    for (final e in items) {
+      if (e.seriesId == seriesId) return e;
+    }
+    return null;
+  }
+
   Future<void> upsert(HistoryEntry entry) async {
+    if (entry.seriesId.isEmpty && entry.episodeId.isEmpty) return;
     final items = await list();
     final next = [
       entry,
@@ -70,5 +83,10 @@ class HistoryStore {
         items.where((e) => e.seriesId != seriesId).map((e) => e.toJson()).toList(),
       ),
     );
+  }
+
+  Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
   }
 }

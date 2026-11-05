@@ -32,7 +32,7 @@ class _SeriesPageState extends State<SeriesPage> {
     if (_fav) {
       await store.remove(widget.series.id);
     } else {
-      await store.add(widget.series.id);
+      await store.addSummary(widget.series);
     }
     setState(() => _fav = !_fav);
   }

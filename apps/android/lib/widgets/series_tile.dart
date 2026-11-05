@@ -3,11 +3,16 @@ import 'package:openhongguo/openhongguo.dart';
 
 import '../pages/series_page.dart';
 
-/// Shared book-store / search row with cover thumb and navigation to [SeriesPage].
+/// Shared book-store / search / favorites row with cover thumb and SeriesPage nav.
 class SeriesTile extends StatelessWidget {
-  const SeriesTile({super.key, required this.series});
+  const SeriesTile({
+    super.key,
+    required this.series,
+    this.trailing,
+  });
 
   final SeriesSummary series;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +50,7 @@ class SeriesTile extends StatelessWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: trailing ?? const Icon(Icons.chevron_right),
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(

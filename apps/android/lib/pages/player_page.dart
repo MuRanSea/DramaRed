@@ -17,6 +17,7 @@ class PlayerPage extends StatefulWidget {
     this.seriesId = '',
     this.seriesTitle = '',
     this.episodes = const [],
+    this.initialPositionMs = 0,
   });
 
   final String title;
@@ -24,6 +25,8 @@ class PlayerPage extends StatefulWidget {
   final String seriesId;
   final String seriesTitle;
   final List<Episode> episodes;
+  /// Resume position from history (milliseconds).
+  final int initialPositionMs;
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
@@ -49,6 +52,8 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   StreamSubscription? _playingSub;
   bool _advancing = false;
   PlaybackResult? _lastPlayback;
+  Timer? _progressTicker;
+  List<Episode> _episodes = const [];
 
   @override
   void initState() {
@@ -56,6 +61,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _episodeId = widget.episodeId;
     _title = widget.title;
+    _episodes = widget.episodes;
     _controller = PlayerController();
     _video = VideoController(_controller.player);
     _completedSub = _controller.player.stream.completed.listen((done) {
@@ -64,7 +70,40 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     _playingSub = _controller.player.stream.playing.listen((playing) {
       unawaited(_syncWakelock(playing));
     });
-    unawaited(_load());
+    _progressTicker = Timer.periodic(const Duration(seconds: 15), (_) {
+      unawaited(_persistProgress());
+    });
+    final resume = widget.initialPositionMs > 0
+        ? Duration(milliseconds: widget.initialPositionMs)
+        : null;
+    unawaited(_load(seekTo: resume));
+    if (widget.seriesId.isNotEmpty && _episodes.isEmpty) {
+      unawaited(_ensureEpisodes());
+    }
+  }
+
+  Future<void> _ensureEpisodes() async {
+    try {
+      final client = await OhgClient.instance();
+      final page = await client.listEpisodes(widget.seriesId);
+      if (!mounted) return;
+      setState(() => _episodes = page.items);
+    } catch (_) {}
+  }
+
+  Future<void> _persistProgress() async {
+    if (widget.seriesId.isEmpty && _episodeId.isEmpty) return;
+    final pos = _controller.player.state.position.inMilliseconds;
+    await HistoryStore().upsert(
+      HistoryEntry(
+        seriesId: widget.seriesId,
+        episodeId: _episodeId,
+        title: _title,
+        seriesTitle: widget.seriesTitle,
+        positionMs: pos,
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
   }
 
   Future<void> _syncWakelock(bool playing) async {
@@ -89,7 +128,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
 
   Future<void> _onCompleted() async {
     if (!_autoNext || _advancing) return;
-    final next = PlayerController.nextEpisode(widget.episodes, _episodeId);
+    final next = PlayerController.nextEpisode(_episodes, _episodeId);
     if (next == null) {
       if (mounted) setState(() => _status = '已播完本剧');
       return;
@@ -144,10 +183,13 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
           seriesId: widget.seriesId,
           episodeId: _episodeId,
           title: _title,
-          positionMs: seekTo?.inMilliseconds ?? 0,
+          seriesTitle: widget.seriesTitle,
+          positionMs: seekTo?.inMilliseconds ??
+              _controller.player.state.position.inMilliseconds,
           updatedAt: DateTime.now().toUtc(),
         ),
       );
+
     } catch (e) {
       if (mounted) setState(() => _status = '播放失败：$e');
     }
@@ -201,8 +243,10 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _stopTicker?.cancel();
+    _progressTicker?.cancel();
     _completedSub?.cancel();
     _playingSub?.cancel();
+    unawaited(_persistProgress());
     unawaited(WakelockPlus.disable());
     _controller.dispose();
     super.dispose();
@@ -210,7 +254,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final epIndex = widget.episodes.indexWhere((e) => e.id == _episodeId);
+    final epIndex = _episodes.indexWhere((e) => e.id == _episodeId);
     return Scaffold(
       appBar: AppBar(title: Text(_title)),
       body: ListView(
@@ -227,7 +271,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
           Text(_status),
           if (epIndex >= 0)
             Text(
-              '分集 ${epIndex + 1}/${widget.episodes.length}'
+              '分集 ${epIndex + 1}/${_episodes.length}'
               '${_lastPlayback == null ? '' : ' · streams=${_lastPlayback!.playback.streams.length}'}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -262,9 +306,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
           SwitchListTile(
             title: const Text('自动连播'),
             subtitle: Text(
-              widget.episodes.isEmpty
+              _episodes.isEmpty
                   ? '未传入分集列表（从书城/搜索进分集页再播可连播）'
-                  : '播完自动下一集（共 ${widget.episodes.length} 集）',
+                  : '播完自动下一集（共 ${_episodes.length} 集）',
             ),
             value: _autoNext,
             onChanged: (v) => setState(() => _autoNext = v),
