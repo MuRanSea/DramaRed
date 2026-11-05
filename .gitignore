@@ -1,0 +1,43 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Flutter / Dart
+apps/android/.dart_tool/
+apps/android/.flutter-plugins
+apps/android/.flutter-plugins-dependencies
+apps/android/.packages
+apps/android/build/
+apps/android/.pub-cache/
+apps/android/.pub/
+apps/android/ios/Pods/
+apps/android/android/.gradle/
+apps/android/android/local.properties
+apps/android/android/app/debug/
+apps/android/android/app/profile/
+apps/android/android/app/release/
+*.iml
+
+# .NET / Avalonia
+apps/windows/ui/bin/
+apps/windows/ui/obj/
+apps/windows/ui/*.user
+*.suo
+*.user
+[Bb]in/
+[Oo]bj/
+
+# Go
+apps/windows/daemon/bin/
+apps/windows/daemon/drama-daemon
+apps/windows/daemon/anonymous.json
+**/vendor/
+
+# Local secrets / device profiles
+**/anonymous.json
+.env
+*.log
