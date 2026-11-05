@@ -1,0 +1,17 @@
+total 1.2M
+drwxr-xr-x 2 box box 4.0K Nov  5 16:31 .
+drwxr-xr-x 4 box box 4.0K Nov  5 16:32 ..
+-rw-r--r-- 1 box box 5.5K Nov  5 16:31 flutter-test.txt
+-rw-r--r-- 1 box box  121 Nov  5 16:31 host-api.txt
+-rw-r--r-- 1 box box    0 Nov  5 16:32 listing.txt
+-rw-r--r-- 1 box box  14K Nov  5 16:07 logcat-grep.txt
+-rw-r--r-- 1 box box  403 Nov  5 16:06 logcat-local.txt
+-rw-r--r-- 1 box box 356K Nov  5 16:14 logcat-local2.txt.gz
+-rw-r--r-- 1 box box 580K Nov  5 16:30 logcat-local3.txt.gz
+-rw-r--r-- 1 box box 1.7K Nov  5 16:30 logcat-relevant3.txt
+-rw-r--r-- 1 box box 5.5K Nov  5 16:31 run.txt
+-rw-r--r-- 1 box box    0 Nov  5 16:06 smoke-lines.txt
+-rw-r--r-- 1 box box  16K Nov  5 16:31 ui-home-final.png
+-rw-r--r-- 1 box box  57K Nov  5 16:00 ui-home.png
+-rw-r--r-- 1 box box  52K Nov  5 16:07 ui-smoke.png
+-rw-r--r-- 1 box box  16K Nov  5 16:30 ui-smoke3.png

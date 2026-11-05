@@ -1,0 +1,4 @@
+## host daemon (guest offline complementary)
+{"ok":true,"sdk":"openhongguo@v0.2.0","service":"drama-daemon"}
+
+discover 8

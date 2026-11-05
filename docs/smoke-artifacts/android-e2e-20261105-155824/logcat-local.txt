@@ -1,0 +1,4 @@
+--------- beginning of main
+11-05 15:09:45.343 I/flutter (10807): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(104)] Using the Impeller rendering backend (OpenGLES).
+11-05 15:09:58.679 I/flutter (10807): The Dart VM service is listening on http://127.0.0.1:33275/eswyEnzIKOQ=/
+11-05 15:10:16.716 I/flutter (10807): media_kit: NativeReferenceHolder: Allocated 129046017483328
