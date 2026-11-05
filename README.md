@@ -2,7 +2,7 @@
 
 个人学习 / 自用的短剧客户端骨架（Android + Windows）。
 
-> **本仓库尚未实现完整业务逻辑**；当前分支提供目录骨架、接口占位与文档。
+> **首版可运行路径**：Windows daemon 已接真实 openhongguo；Android 已接搜索→分集→playback→media_kit（需真机/模拟器验证画面）。完整播放体验与后台听仍待完善。
 
 ## 功能（目标）
 
@@ -58,10 +58,10 @@ docs/architecture.md   两端架构与模块边界
 
 | 工具 | 用途 | 备注 |
 |---|---|---|
-| Flutter (stable) + Android SDK | `apps/android` | 本脚手架机器若未装 Flutter，请本机安装后 `flutter pub get` |
-| Go ≥ 1.22 | `apps/windows/daemon` | 已锁 openhongguo `@v0.2.0` |
-| .NET 8 SDK | `apps/windows/ui` Avalonia | 未装则无法编译 UI；骨架文件可手改 |
-| libmpv（Windows 运行时） | 播放器 | UI 侧后续接入；骨架阶段不强制 |
+| Flutter (stable) + Android SDK + JDK 17 | `apps/android` | box 已装 Flutter/JDK/Android SDK；`pub get` / `analyze` 通过 |
+| Go ≥ 1.22 | `apps/windows/daemon` | 已锁 openhongguo `@v0.2.0`；curl 冒烟通过 |
+| .NET 8 SDK | `apps/windows/ui` Avalonia | box 已装；`dotnet build` 通过 |
+| libmpv（**Windows** 运行时） | 播放器 | 需在 Windows 侧自备 DLL；Linux box 不强制 |
 
 ### Android
 
