@@ -1,4 +1,4 @@
-module github.com/MuRanSea/DramaRed/apps/windows/daemon
+module github.com/MuRanSea/DramaRed/apps/desktop/daemon
 
 go 1.22
 

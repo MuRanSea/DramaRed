@@ -8,10 +8,13 @@ namespace DramaRed.UI.Views;
 public partial class MainWindow : Window
 {
     private readonly DaemonClient _daemon = new();
+    private readonly MpvPlayerHost _player = new();
 
     public MainWindow()
     {
         InitializeComponent();
+        PlayerBackend.Text = $"播放后端：{_player.BackendDetail}";
+        StatusBar.Text = $"TFM=net10.0 · {_player.BackendDetail}";
     }
 
     private async void OnSearch(object? sender, RoutedEventArgs e)
@@ -36,7 +39,7 @@ public partial class MainWindow : Window
             {
                 count = items.GetArrayLength();
             }
-            SearchHint.Text = $"OK：约 {count} 条（原始 JSON 长度 {page.Value.GetRawText().Length}）";
+            SearchHint.Text = $"OK：约 {count} 条";
         }
         catch (Exception ex)
         {
@@ -49,6 +52,15 @@ public partial class MainWindow : Window
     private async void OnAbout(object? sender, RoutedEventArgs e)
     {
         var healthy = await _daemon.HealthAsync();
-        SearchHint.Text = healthy ? "daemon 健康" : "daemon 未响应（先启动 Go 进程）";
+        StatusBar.Text = healthy
+            ? $"daemon OK · {_player.BackendDetail}"
+            : $"daemon 未响应 · {_player.BackendDetail}";
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _player.Dispose();
+        _daemon.Dispose();
+        base.OnClosed(e);
     }
 }

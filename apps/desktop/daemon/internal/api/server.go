@@ -8,8 +8,8 @@ import (
 
 	"github.com/beilunyang/openhongguo/sdk"
 
-	"github.com/MuRanSea/DramaRed/apps/windows/daemon/internal/ohg"
-	"github.com/MuRanSea/DramaRed/apps/windows/daemon/internal/store"
+	"github.com/MuRanSea/DramaRed/apps/desktop/daemon/internal/ohg"
+	"github.com/MuRanSea/DramaRed/apps/desktop/daemon/internal/store"
 )
 
 type Server struct {

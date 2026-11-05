@@ -2,44 +2,44 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="DramaRed.UI.Views.MainWindow"
         Width="1100" Height="720"
-        Title="DramaRed (scaffold)">
+        Title="DramaRed (desktop)">
   <DockPanel>
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="文件">
         <MenuItem Header="退出" Click="OnExit"/>
       </MenuItem>
       <MenuItem Header="帮助">
-        <MenuItem Header="关于骨架…" Click="OnAbout"/>
+        <MenuItem Header="关于 / 后端…" Click="OnAbout"/>
       </MenuItem>
     </Menu>
+    <TextBlock DockPanel.Dock="Bottom" Margin="8" Name="StatusBar" Text="就绪"/>
     <TabControl>
       <TabItem Header="首页 / 书城">
-        <TextBlock Margin="16" Text="推荐/书城占位 — 调用 GET /api/v1/discover"/>
+        <TextBlock Margin="16" Text="推荐/书城 — GET /api/v1/discover"/>
       </TabItem>
       <TabItem Header="搜索">
         <StackPanel Margin="16" Spacing="8">
-          <TextBox Watermark="搜索短剧（占位）" Name="SearchBox"/>
+          <TextBox PlaceholderText="搜索短剧" Name="SearchBox"/>
           <Button Content="搜索" Click="OnSearch"/>
-          <TextBlock Name="SearchHint" Text="TODO: DaemonClient.SearchAsync"/>
+          <TextBlock Name="SearchHint" Text="调用 daemon /api/v1/search"/>
         </StackPanel>
       </TabItem>
       <TabItem Header="播放">
         <DockPanel Margin="16">
           <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="12">
-            <TextBlock VerticalAlignment="Center" Text="清晰度/倍速/连播/定时停 — UI 壳"/>
+            <TextBlock VerticalAlignment="Center" Name="PlayerBackend" Text="播放后端：探测中…"/>
           </StackPanel>
-          <!-- libmpv host placeholder -->
           <Border Background="#22000000" MinHeight="360">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Text="MpvPlayerHost 占位（后续嵌入 libmpv）"/>
+                       Text="IMediaPlayer 表面占位（libmpv 跨平台）"/>
           </Border>
         </DockPanel>
       </TabItem>
       <TabItem Header="收藏">
-        <TextBlock Margin="16" Text="收藏占位 — /api/v1/favorites"/>
+        <TextBlock Margin="16" Text="收藏 — /api/v1/favorites"/>
       </TabItem>
       <TabItem Header="历史">
-        <TextBlock Margin="16" Text="历史/续播占位 — /api/v1/history"/>
+        <TextBlock Margin="16" Text="历史/续播 — /api/v1/history"/>
       </TabItem>
     </TabControl>
   </DockPanel>

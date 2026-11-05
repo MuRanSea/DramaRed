@@ -1,8 +1,8 @@
 # DramaRed
 
-个人学习 / 自用的短剧客户端骨架（Android + Windows）。
+个人学习 / 自用的短剧客户端骨架（Android + Desktop 跨平台）。
 
-> **首版可运行路径**：Windows daemon 已接真实 openhongguo；Android 已接搜索→分集→playback→media_kit（需真机/模拟器验证画面）。完整播放体验与后台听仍待完善。
+> **首版可运行路径**：Desktop daemon 已接真实 openhongguo；Android 已接搜索→分集→playback→media_kit（需真机/模拟器验证画面）。完整播放体验与后台听仍待完善。
 
 ## 功能（目标）
 
@@ -21,16 +21,16 @@
 | 端 | 方案 |
 |---|---|
 | Android | Flutter + [openhongguo](https://pub.dev/packages/openhongguo) `0.2.0` + [media_kit](https://pub.dev/packages/media_kit)（ClearKey / 后台听预留） |
-| Windows | Avalonia (.NET) UI + Go 业务进程（[openhongguo Go SDK](https://pkg.go.dev/github.com/beilunyang/openhongguo/sdk) `v0.2.0`）+ libmpv |
+| Desktop | Avalonia (.NET) UI + Go 业务进程（[openhongguo Go SDK](https://pkg.go.dev/github.com/beilunyang/openhongguo/sdk) `v0.2.0`）+ libmpv |
 | SDK 锁定 | **openhongguo v0.2.0**（Flutter pub / Go module 均锁此版本） |
 
 ## 仓库结构
 
 ```
 apps/android/          Flutter Android 客户端骨架
-apps/windows/ui/       Avalonia UI 骨架
-apps/windows/daemon/   Go 本地 API 进程（封装 openhongguo）
-apps/windows/README.md Windows 联调说明
+apps/desktop/ui/       Avalonia UI 骨架
+apps/desktop/daemon/   Go 本地 API 进程（封装 openhongguo）
+apps/desktop/README.md Desktop 联调说明（Linux/Windows/macOS）
 docs/architecture.md   两端架构与模块边界
 ```
 
@@ -59,9 +59,9 @@ docs/architecture.md   两端架构与模块边界
 | 工具 | 用途 | 备注 |
 |---|---|---|
 | Flutter (stable) + Android SDK + JDK 17 | `apps/android` | box 已装 Flutter/JDK/Android SDK；`pub get` / `analyze` 通过 |
-| Go ≥ 1.22 | `apps/windows/daemon` | 已锁 openhongguo `@v0.2.0`；curl 冒烟通过 |
-| .NET 8 SDK | `apps/windows/ui` Avalonia | box 已装；`dotnet build` 通过 |
-| libmpv（**Windows** 运行时） | 播放器 | 需在 Windows 侧自备 DLL；Linux box 不强制 |
+| Go ≥ 1.22 | `apps/desktop/daemon` | 已锁 openhongguo `@v0.2.0`；curl 冒烟通过 |
+| .NET 10 SDK | `apps/desktop/ui` Avalonia | box 已装 10.0.403；TFM `net10.0`；`linux-x64` build 通过 |
+| libmpv | 播放器 | Linux/macOS 用系统库；Windows 可选 DLL |
 
 ### Android
 
@@ -73,20 +73,24 @@ flutter run
 
 页面占位：`Home` / `Search` / `Player` / `Favorites` / `History`。播放与 ClearKey / 后台听仅预留依赖与注释，未实现。
 
-### Windows
+### Desktop（Linux / Windows / macOS）
 
-见 [`apps/windows/README.md`](apps/windows/README.md)。
+见 [`apps/desktop/README.md`](apps/desktop/README.md)。
 
-简要：先启动 Go daemon（默认 `http://127.0.0.1:17890`），再启动 Avalonia UI；播放由 UI 调 libmpv，业务数据走 daemon HTTP JSON。
+简要：先启动 Go daemon（默认 `http://127.0.0.1:17890`），再启动 Avalonia UI；播放经 `IMediaPlayer` 探测系统 libmpv（Windows DLL 可选），业务数据走 daemon HTTP JSON。
 
 ### Go daemon 单独跑
 
 ```sh
-cd apps/windows/daemon
+cd apps/desktop/daemon
 go run ./cmd/drama-daemon
 # 健康检查
 curl -s http://127.0.0.1:17890/health
 ```
+
+## Box 环境
+
+云端 box 工具链与阻塞见 [`docs/box-env.md`](docs/box-env.md)。
 
 ## 许可与用途
 
