@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:openhongguo/openhongguo.dart';
 
 import '../navigation/play_nav.dart';
-import '../pages/search_page.dart';
 import '../services/ohg_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/poster_card.dart';
@@ -36,17 +35,6 @@ class _TheaterPageState extends State<TheaterPage> {
       backgroundColor: HgColors.bg,
       appBar: AppBar(
         title: const Text('剧场'),
-        actions: [
-          IconButton(
-            tooltip: '搜索',
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SearchPage()),
-              );
-            },
-          ),
-        ],
       ),
       body: FutureBuilder<PagedResult<SeriesSummary>>(
         future: _future,

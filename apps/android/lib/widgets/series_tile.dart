@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:openhongguo/openhongguo.dart';
 
-import '../pages/series_page.dart';
+import '../navigation/play_nav.dart';
 
-/// Shared book-store / search / favorites row with cover thumb and SeriesPage nav.
+/// Shared row with cover thumb; tap opens the immersive player.
 class SeriesTile extends StatelessWidget {
   const SeriesTile({
     super.key,
@@ -51,13 +51,7 @@ class SeriesTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: trailing ?? const Icon(Icons.chevron_right),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => SeriesPage(series: series),
-          ),
-        );
-      },
+      onTap: () => playSeries(context, series: series),
     );
   }
 }

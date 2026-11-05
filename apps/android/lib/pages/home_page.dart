@@ -8,7 +8,7 @@ import '../services/ohg_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cover_image.dart';
 
-/// 首页：竖滑沉浸推荐流（红果风格），点进全屏播放。
+/// 首页：竖滑换剧的推荐流。点封面进入播放页后再切集。
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,11 +17,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  static const _tabs = ['剧', '关注', '漫剧', '真人剧', '推荐'];
-  int _tab = 4; // 推荐
   late Future<PagedResult<SeriesSummary>> _future;
   final _fav = <String>{};
-  final _liked = <String>{};
 
   @override
   void initState() {
@@ -38,27 +35,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  List<SeriesSummary> _filter(List<SeriesSummary> items) {
-    switch (_tabs[_tab]) {
-      case '关注':
-        return const [];
-      case '漫剧':
-        return items
-            .where((s) =>
-                s.category.contains('漫') ||
-                s.title.contains('漫') ||
-                s.description.contains('漫'))
-            .toList();
-      case '真人剧':
-        return items
-            .where((s) =>
-                !s.category.contains('漫') && !s.title.contains('漫'))
-            .toList();
-      default:
-        return items;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,10 +48,8 @@ class _HomePageState extends State<HomePage> {
           } else if (snap.hasError) {
             body = _ErrorPane(error: snap.error, onRetry: _reload);
           } else {
-            final items = _filter(snap.data?.items ?? const <SeriesSummary>[]);
-            if (_tabs[_tab] == '关注') {
-              body = const _EmptyPane(message: '暂无关注（占位）');
-            } else if (items.isEmpty) {
+            final items = snap.data?.items ?? const <SeriesSummary>[];
+            if (items.isEmpty) {
               body = _EmptyPane(
                 message: '暂无内容',
                 action: '刷新',
@@ -90,7 +64,6 @@ class _HomePageState extends State<HomePage> {
                   return _FeedCard(
                     series: s,
                     favorited: _fav.contains(s.id),
-                    liked: _liked.contains(s.id),
                     onOpen: () => playSeries(context, series: s),
                     onFavorite: () async {
                       final store = FavoritesStore();
@@ -101,19 +74,6 @@ class _HomePageState extends State<HomePage> {
                         await store.addSummary(s);
                         setState(() => _fav.add(s.id));
                       }
-                    },
-                    onLike: () => setState(() {
-                      if (!_liked.add(s.id)) _liked.remove(s.id);
-                    }),
-                    onComment: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('评论占位')),
-                      );
-                    },
-                    onShare: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('分享「${s.title}」占位')),
-                      );
                     },
                   );
                 },
@@ -128,9 +88,6 @@ class _HomePageState extends State<HomePage> {
                 left: 0,
                 right: 0,
                 child: _TopBar(
-                  tabs: _tabs,
-                  index: _tab,
-                  onSelect: (i) => setState(() => _tab = i),
                   onSearch: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(builder: (_) => const SearchPage()),
@@ -147,16 +104,8 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.tabs,
-    required this.index,
-    required this.onSelect,
-    required this.onSearch,
-  });
+  const _TopBar({required this.onSearch});
 
-  final List<String> tabs;
-  final int index;
-  final ValueChanged<int> onSelect;
   final VoidCallback onSearch;
 
   @override
@@ -175,43 +124,28 @@ class _TopBar extends StatelessWidget {
           height: 48,
           child: Row(
             children: [
-              Expanded(
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: tabs.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 18),
-                  itemBuilder: (context, i) {
-                    final selected = i == index;
-                    return GestureDetector(
-                      onTap: () => onSelect(i),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              tabs[i],
-                              style: TextStyle(
-                                color: selected ? Colors.white : Colors.white70,
-                                fontSize: selected ? 18 : 16,
-                                fontWeight:
-                                    selected ? FontWeight.w700 : FontWeight.w400,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              width: 16,
-                              height: 2,
-                              color: selected ? Colors.white : Colors.transparent,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+              const SizedBox(width: 16),
+              const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '推荐',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  SizedBox(
+                    width: 16,
+                    height: 2,
+                    child: ColoredBox(color: Colors.white),
+                  ),
+                ],
               ),
               IconButton(
+                tooltip: '搜索',
                 icon: const Icon(Icons.search, color: Colors.white),
                 onPressed: onSearch,
               ),
@@ -227,22 +161,14 @@ class _FeedCard extends StatelessWidget {
   const _FeedCard({
     required this.series,
     required this.favorited,
-    required this.liked,
     required this.onOpen,
     required this.onFavorite,
-    required this.onLike,
-    required this.onComment,
-    required this.onShare,
   });
 
   final SeriesSummary series;
   final bool favorited;
-  final bool liked;
   final VoidCallback onOpen;
   final VoidCallback onFavorite;
-  final VoidCallback onLike;
-  final VoidCallback onComment;
-  final VoidCallback onShare;
 
   List<String> get _tags {
     final tags = <String>[];
@@ -294,48 +220,12 @@ class _FeedCard extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: MediaQuery.of(context).padding.top + 88,
-          right: 16,
-          child: GestureDetector(
-            onTap: onOpen,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0x99000000),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.fullscreen, color: Colors.white, size: 16),
-                  SizedBox(width: 4),
-                  Text('全屏观看', style: TextStyle(color: Colors.white, fontSize: 12)),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
           right: 10,
           bottom: 120,
-          child: Column(
-            children: [
-              _SideBtn(
-                icon: favorited ? Icons.star : Icons.star_border,
-                label: favorited ? '已收藏' : '收藏',
-                onTap: onFavorite,
-              ),
-              const SizedBox(height: 18),
-              _SideBtn(icon: Icons.chat_bubble_outline, label: '评论', onTap: onComment),
-              const SizedBox(height: 18),
-              _SideBtn(
-                icon: liked ? Icons.favorite : Icons.favorite_border,
-                label: liked ? '已赞' : '赞',
-                onTap: onLike,
-              ),
-              const SizedBox(height: 18),
-              _SideBtn(icon: Icons.reply, label: '分享', onTap: onShare),
-            ],
+          child: _SideBtn(
+            icon: favorited ? Icons.star : Icons.star_border,
+            label: favorited ? '已收藏' : '收藏',
+            onTap: onFavorite,
           ),
         ),
         Positioned(
@@ -386,11 +276,6 @@ class _FeedCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
-              const SizedBox(height: 6),
-              Text(
-                series.author.isNotEmpty ? '作者：${series.author}' : '作者声明：内容来自开放源',
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
-              ),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: onOpen,
@@ -408,7 +293,7 @@ class _FeedCard extends StatelessWidget {
                         child: Text(
                           series.episodeCount > 0
                               ? '观看完整短剧 · 全${series.episodeCount}集'
-                              : '观看完整短剧',
+                              : '进入播放',
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ),

@@ -67,4 +67,26 @@ void main() {
       );
     });
   });
+
+  group('previousEpisode', () {
+    test('returns previous playable', () {
+      final eps = [
+        const Episode(id: 'a', number: 1, playable: true),
+        const Episode(id: 'b', number: 2, playable: true),
+        const Episode(id: 'c', number: 3, playable: true),
+      ];
+      expect(PlayerController.previousEpisode(eps, 'c')?.id, 'b');
+      expect(PlayerController.previousEpisode(eps, 'a'), isNull);
+    });
+
+    test('unknown current → null', () {
+      expect(
+        PlayerController.previousEpisode(
+          const [Episode(id: 'a', playable: true)],
+          'x',
+        ),
+        isNull,
+      );
+    });
+  });
 }

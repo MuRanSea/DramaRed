@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:openhongguo/openhongguo.dart';
 
 import '../navigation/play_nav.dart';
-import '../pages/search_page.dart';
 import '../services/favorites_store.dart';
 import '../services/history_store.dart';
+import '../services/ohg_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/poster_card.dart';
 import 'player_page.dart';
-import '../services/ohg_client.dart';
-import 'package:openhongguo/openhongguo.dart';
+import 'settings_page.dart';
 
-/// 「我的」：头像资料 + 作品/历史/收藏等 Tab + 三列海报网格。
+/// 「我的」：历史 + 收藏（点进续播）以及设置入口（含定时停播）。
 class MinePage extends StatefulWidget {
   const MinePage({super.key});
 
@@ -19,8 +19,8 @@ class MinePage extends StatefulWidget {
 }
 
 class _MinePageState extends State<MinePage> {
-  static const _tabs = ['作品', '历史', '收藏', '点赞', '预约'];
-  int _tab = 1; // 历史
+  static const _tabs = ['历史', '收藏'];
+  int _tab = 0;
   int _filter = 0; // 0全部 1已看完 2未看完
   late Future<List<HistoryEntry>> _history;
   late Future<List<FavoriteEntry>> _favorites;
@@ -45,14 +45,14 @@ class _MinePageState extends State<MinePage> {
       body: SafeArea(
         child: Column(
           children: [
-            const _ProfileHeader(),
-            const _ShortcutRow(),
+            const _Header(),
             _TabRow(
               tabs: _tabs,
               index: _tab,
               onSelect: (i) => setState(() => _tab = i),
             ),
-            if (_tab == 1) _FilterRow(index: _filter, onSelect: (i) => setState(() => _filter = i)),
+            if (_tab == 0)
+              _FilterRow(index: _filter, onSelect: (i) => setState(() => _filter = i)),
             Expanded(child: _buildBody()),
           ],
         ),
@@ -67,141 +67,45 @@ class _MinePageState extends State<MinePage> {
       case '收藏':
         return _FavoritesGrid(future: _favorites, onChanged: _reload);
       default:
-        return Center(
-          child: Text('暂无${_tabs[_tab]}（占位）', style: const TextStyle(color: HgColors.mineMuted)),
-        );
+        return const SizedBox.shrink();
     }
   }
 }
 
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader();
+class _Header extends StatelessWidget {
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 12, 8),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 28,
-                backgroundColor: Color(0xFFE8E0D4),
-                child: Icon(Icons.person, color: Color(0xFF8A7A60), size: 32),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'DramaRed 用户',
-                      style: TextStyle(
-                        color: HgColors.mineText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text('红果号：guest', style: TextStyle(color: HgColors.mineMuted, fontSize: 12)),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.mail_outline, color: HgColors.mineText),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('消息占位')),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.menu, color: HgColors.mineText),
-                onPressed: () {},
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const _Stat(value: '0', label: '关注'),
-              const SizedBox(width: 24),
-              const _Stat(value: '0', label: '粉丝'),
-              const SizedBox(width: 24),
-              const _Stat(value: '0', label: '获赞'),
-              const Spacer(),
-              OutlinedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('编辑资料占位')),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: HgColors.mineText,
-                  side: const BorderSide(color: Color(0xFFE0E0E0)),
-                  visualDensity: VisualDensity.compact,
-                ),
-                child: const Text('编辑资料'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.value, required this.label});
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: HgColors.mineText)),
-        Text(label, style: const TextStyle(fontSize: 12, color: HgColors.mineMuted)),
-      ],
-    );
-  }
-}
-
-class _ShortcutRow extends StatelessWidget {
-  const _ShortcutRow();
-
-  @override
-  Widget build(BuildContext context) {
-    Widget card(IconData icon, String title, String sub) {
-      return Expanded(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-          decoration: BoxDecoration(
-            color: HgColors.mineCard,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 20, color: HgColors.accent),
-              const SizedBox(height: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: HgColors.mineText)),
-              Text(sub, style: const TextStyle(fontSize: 11, color: HgColors.mineMuted)),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 4, 8),
       child: Row(
         children: [
-          card(Icons.card_giftcard_outlined, '福利', '去领取'),
-          card(Icons.receipt_long_outlined, '订单', '查看订单'),
-          card(Icons.sports_esports_outlined, '游戏', '来玩'),
+          const CircleAvatar(
+            radius: 24,
+            backgroundColor: Color(0xFFE8E0D4),
+            child: Icon(Icons.person, color: Color(0xFF8A7A60), size: 28),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              '我的',
+              style: TextStyle(
+                color: HgColors.mineText,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: '设置',
+            icon: const Icon(Icons.settings_outlined, color: HgColors.mineText),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -217,7 +121,7 @@ class _TabRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
       child: Row(
         children: [
           for (var i = 0; i < tabs.length; i++)
@@ -235,15 +139,6 @@ class _TabRow extends StatelessWidget {
                 ),
               ),
             ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.search, color: HgColors.mineMuted),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SearchPage()),
-              );
-            },
-          ),
         ],
       ),
     );

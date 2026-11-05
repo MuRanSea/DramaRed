@@ -24,15 +24,17 @@ flutter analyze   # No issues
 3. 流程：搜索 → 点进剧 → 选集 → `resolvePlayback` → media_kit 打开流
 4. 受保护流会尝试 `demuxer-lavf-o=decryption_key=<hex>`（ClearKey 完整方案仍可能需后续加固）
 
-## 页面
+## 页面（产品约定）
 
 | 路由 | 说明 |
 |---|---|
-| Home | `discover()` 剧场推荐 |
-| Search | `search(q)` |
-| Series | `listEpisodes` + 收藏 |
-| Player | `resolvePlayback` + media_kit（清晰度/倍速 UI） |
-| Favorites / History | SharedPreferences 本地存储 |
+| 首页 | 顶栏仅「推荐」+ 搜索；竖滑换剧；点进播放页 |
+| 搜索 | 顶栏「推荐」旁进入；结果点进播放 |
+| 剧场 | 三列瀑布流封面；点进播放 |
+| 播放页 | 竖屏沉浸；上滑下一集 / 下滑上一集；播完可自动下一集；预加载下一集；清晰度 / 倍速 / 选集 / 收藏 |
+| 我的 | 历史 + 收藏（点进续播）；设置入口（含定时停播、后台继续听） |
+
+底栏为「首页 / 剧场 / 我的」。不做商城、不做下载。定时停播不在播放页。
 
 ## 工程说明
 
@@ -55,12 +57,12 @@ flutter build apk --debug
 
 Player 页支持：
 
-- 清晰度切换（切换后尽量 seek 回原进度）
-- 倍速 0.75 / 1.0 / 1.25 / 1.5 / 2.0
-- 自动连播（需从分集页传入 `episodes`）
-- 定时停止（15/30/45/60 分钟）
-- 后台继续听（切后台不主动 pause + `wakelock_plus`）
+- 清晰度、倍速、选集、收藏（控件在播放页）
+- 上滑下一集、下滑上一集；播完可自动下一集
+- 预加载下一集（解析下一集地址并用待机 Player 打开）
+- 后台继续听（切后台不主动 pause + `wakelock_plus`，设置在「我的」）
+- 定时停播在「我的 → 设置」（15/30/45/60 分钟），不在播放页
 
-单测：`flutter test test/player_controller_test.dart`
+单测：`cd apps/android && flutter test`
 
 > 模拟器 guest 无出网时无法拉真实流；逻辑与 UI 以单测 + analyze 验证。Host daemon API 见 `docs/smoke-artifacts/host-api-smoke.md`。
