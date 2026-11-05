@@ -38,7 +38,7 @@
 | `lib/services/favorites_store.dart` | 收藏 |
 | `lib/services/player_controller.dart` | media_kit 控制（占位） |
 
-## Windows（Avalonia + Go + libmpv）
+## Desktop（Avalonia + Go + libmpv，跨平台）
 
 ```
 ┌──────────────────┐  HTTP JSON   ┌──────────────────────────┐
@@ -72,7 +72,7 @@
 | GET/POST/DELETE | `/api/v1/history` | 播放历史 / 续播 |
 | GET/POST/DELETE | `/api/v1/favorites` | 收藏 |
 
-实现状态：路由与 DTO 已就位；ohg 调用处标 `TODO`，本地 store 为内存/JSON 文件占位。
+实现状态：路由与 DTO 已就位；search/discover/episodes/playback 已接 openhongguo；本地 history/favorites 为 JSON 文件。
 
 ### 模块边界
 
@@ -87,7 +87,7 @@
 1. UI 搜索 → daemon `/search` → openhongguo `Search`
 2. UI 选剧 → `/series/{id}/episodes` → `ListEpisodes`
 3. UI 选集约 → `/episodes/{id}/playback` → `ResolvePlayback`
-4. UI 把返回的 stream URL（及必要时的内容密钥）交给播放器（Android: media_kit；Windows: libmpv）
+4. UI 把返回的 stream URL（及必要时的内容密钥）交给播放器（Android: media_kit；Desktop: libmpv via IMediaPlayer）
 5. 进度写入 history；收藏走 favorites
 
 ## 安全与合规提示
@@ -100,5 +100,13 @@
 ## 播放密钥（受保护流）
 
 - Flutter：`resolvePlayback` 返回 `PlaybackResult.contentKey`（SDK 已推导）。
-- Windows daemon：`/api/v1/episodes/{id}/playback` 在 `ErrDRMProtected` 时附加 `contentKey`（`sdk.ContentKey`）。
+- Desktop daemon：`/api/v1/episodes/{id}/playback` 在 `ErrDRMProtected` 时附加 `contentKey`（`sdk.ContentKey`）。
 - 播放器侧：media_kit / libmpv 目前以 `demuxer-lavf-o=decryption_key=<hex>` 作 best-effort；完整 CENC ClearKey 仍可能需后续平台适配。
+
+
+## Desktop 播放抽象
+
+- `IMediaPlayer`：跨平台播放接口（Open/Pause/Resume/Stop）。
+- `LibMpvMediaPlayer`：按 OS 探测 libmpv（Linux `.so` / macOS `.dylib` / Windows 可选 `.dll`）。
+- `NullMediaPlayer`：探测失败时的安全回退。
+- UI **不得**写死 Win32 路径；Windows DLL 仅为可选实现。
