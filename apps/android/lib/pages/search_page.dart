@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:openhongguo/openhongguo.dart';
 
+import '../navigation/play_nav.dart';
 import '../services/ohg_client.dart';
-import '../widgets/series_tile.dart';
+import '../theme/app_theme.dart';
+import '../widgets/poster_card.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -32,64 +34,73 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('搜索')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: '搜索短剧',
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () => _run(_controller.text),
-                ),
-              ),
-              textInputAction: TextInputAction.search,
-              onSubmitted: _run,
-            ),
+      backgroundColor: HgColors.bg,
+      appBar: AppBar(
+        title: TextField(
+          controller: _controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: '搜索短剧',
+            hintStyle: TextStyle(color: Colors.white54),
+            border: InputBorder.none,
           ),
-          Expanded(
-            child: _future == null
-                ? const Center(child: Text('输入关键词搜索'))
-                : FutureBuilder<PagedResult<SeriesSummary>>(
-                    future: _future,
-                    builder: (context, snap) {
-                      if (snap.connectionState != ConnectionState.done) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snap.hasError) {
-                        return Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('搜索失败：${snap.error}', textAlign: TextAlign.center),
-                              const SizedBox(height: 12),
-                              FilledButton(
-                                onPressed: () => _run(_controller.text),
-                                child: const Text('重试'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                      final items = snap.data?.items ?? const <SeriesSummary>[];
-                      if (items.isEmpty) {
-                        return const Center(child: Text('无结果'));
-                      }
-                      return ListView.separated(
-                        itemCount: items.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, i) => SeriesTile(series: items[i]),
-                      );
-                    },
-                  ),
+          textInputAction: TextInputAction.search,
+          onSubmitted: _run,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => _run(_controller.text),
+            child: const Text('搜索'),
           ),
         ],
       ),
+      body: _future == null
+          ? const Center(child: Text('输入关键词搜索', style: TextStyle(color: Colors.white54)))
+          : FutureBuilder<PagedResult<SeriesSummary>>(
+              future: _future,
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snap.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('搜索失败：${snap.error}', textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () => _run(_controller.text),
+                          child: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final items = snap.data?.items ?? const <SeriesSummary>[];
+                if (items.isEmpty) {
+                  return const Center(child: Text('无结果', style: TextStyle(color: Colors.white54)));
+                }
+                return GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.48,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (context, i) {
+                    final s = items[i];
+                    return PosterCard.fromSeries(
+                      series: s,
+                      onTap: () => playSeries(context, series: s),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 }
