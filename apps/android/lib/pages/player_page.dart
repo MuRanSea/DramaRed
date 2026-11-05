@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -9,9 +8,11 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/favorites_store.dart';
 import '../services/history_store.dart';
 import '../services/ohg_client.dart';
+import '../services/playback_policies.dart';
 import '../services/playback_settings_store.dart';
 import '../services/player_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/episode_swipe_shell.dart';
 
 class PlayerPage extends StatefulWidget {
   const PlayerPage({
@@ -180,10 +181,16 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // When background listen is on, keep audio; otherwise pause on background.
-    if (!_backgroundListen &&
-        (state == AppLifecycleState.paused ||
-            state == AppLifecycleState.inactive)) {
+    if (PlaybackPolicies.shouldPauseOnBackground(
+      backgroundListen: _backgroundListen,
+      state: state,
+    )) {
+      debugPrint('[DramaRedPlayer] background_listen pause');
       unawaited(_controller.pause());
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      debugPrint('[DramaRedPlayer] background_listen keep_playing');
     }
   }
 
@@ -205,6 +212,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     if (_advancing) return;
     if (next.id == _episodeId) return;
     _advancing = true;
+    debugPrint(
+      '[DramaRedPlayer] advance_to episode=${next.id} number=${next.number}',
+    );
     try {
       if (mounted) {
         setState(() {
@@ -285,11 +295,17 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     }
     try {
       final client = await OhgClient.instance();
+      final kind = PlaybackPolicies.decideLoad(
+        forceResolve: forceResolve,
+        preloaded: _controller.isPreloaded(_episodeId),
+        cached: _playbackCache.containsKey(_episodeId),
+      );
       if (forceResolve) {
         _playbackCache.remove(_episodeId);
       }
 
-      if (!forceResolve && await _controller.takePreloaded(_episodeId)) {
+      if (kind == PlaybackLoadKind.promote &&
+          await _controller.takePreloaded(_episodeId)) {
         _bindPlayerStreams();
         if (mounted) setState(() {});
         final cached = _playbackCache[_episodeId];
@@ -315,9 +331,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
         return;
       }
 
-      final result = forceResolve
-          ? await client.resolvePlayback(_episodeId)
-          : (_playbackCache[_episodeId] ?? await client.resolvePlayback(_episodeId));
+      final result = kind == PlaybackLoadKind.useCache
+          ? _playbackCache[_episodeId]!
+          : await client.resolvePlayback(_episodeId);
       _playbackCache[_episodeId] = result;
       if (mounted) setState(() => _applyResultMeta(result));
       await _controller.openPlayback(
@@ -344,16 +360,13 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
 
   void _armStopTimer(int minutes) {
     _stopTicker?.cancel();
-    if (minutes <= 0) {
-      _stopDeadline = null;
-      return;
-    }
-    _stopDeadline = DateTime.now().add(Duration(minutes: minutes));
+    _stopDeadline = PlaybackPolicies.stopDeadline(DateTime.now(), minutes);
+    if (_stopDeadline == null) return;
     _stopTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       final deadline = _stopDeadline;
-      if (deadline == null) return;
-      if (deadline.difference(DateTime.now()) > Duration.zero) return;
+      if (!PlaybackPolicies.shouldFireStop(DateTime.now(), deadline)) return;
       _stopTicker?.cancel();
+      debugPrint('[DramaRedPlayer] stop_timer_fired minutes=$minutes');
       unawaited(_controller.pause());
       unawaited(WakelockPlus.disable());
       if (mounted) {
@@ -552,10 +565,12 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
           children: [
             ColoredBox(
               color: Colors.black,
-              child: Video(
-                controller: _video,
-                fit: BoxFit.cover,
-                controls: NoVideoControls,
+              child: IgnorePointer(
+                child: Video(
+                  controller: _video,
+                  fit: BoxFit.cover,
+                  controls: NoVideoControls,
+                ),
               ),
             ),
             if (!_playing)
@@ -597,44 +612,26 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     required String epLabel,
     required String speedLabel,
   }) {
-    final chrome = _PlayerChrome(
-      displayTitle: displayTitle,
-      epLabel: epLabel,
-      status: _status,
-      definition: _definition,
-      speedLabel: speedLabel,
-      favorited: _favorited,
-      onBack: () => Navigator.of(context).maybePop(),
-      onFavorite: () => unawaited(_toggleFav()),
-      onDefinition: _showDefinitionSheet,
-      onSpeed: _showSpeedSheet,
-      onEpisodes: _showEpisodeSheet,
-    );
-    if (_episodes.length <= 1) {
-      return GestureDetector(
-        onTap: _togglePlay,
-        onVerticalDragEnd: (details) {
-          final v = details.primaryVelocity ?? 0;
-          if (v < -400) {
-            unawaited(_playNext());
-          } else if (v > 400) {
-            unawaited(_playPrev());
-          }
-        },
-        child: chrome,
-      );
-    }
-    return PageView.builder(
+    return EpisodeSwipeShell(
+      episodeCount: _episodes.length,
       controller: _epPageController,
-      scrollDirection: Axis.vertical,
-      itemCount: _episodes.length,
       onPageChanged: _onEpisodePageChanged,
-      itemBuilder: (context, i) {
-        return GestureDetector(
-          onTap: _togglePlay,
-          child: chrome,
-        );
-      },
+      onSwipeNext: () => unawaited(_playNext()),
+      onSwipePrev: () => unawaited(_playPrev()),
+      onTap: _togglePlay,
+      overlayBuilder: (context) => _PlayerChrome(
+        displayTitle: displayTitle,
+        epLabel: epLabel,
+        status: _status,
+        definition: _definition,
+        speedLabel: speedLabel,
+        favorited: _favorited,
+        onBack: () => Navigator.of(context).maybePop(),
+        onFavorite: () => unawaited(_toggleFav()),
+        onDefinition: _showDefinitionSheet,
+        onSpeed: _showSpeedSheet,
+        onEpisodes: _showEpisodeSheet,
+      ),
     );
   }
 }

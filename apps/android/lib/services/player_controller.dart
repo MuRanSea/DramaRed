@@ -1,14 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:openhongguo/openhongguo.dart';
+
+import 'player_promote_slot.dart';
 
 /// media_kit playback helper. ClearKey / decryption_key is best-effort.
 /// Optionally keeps a standby [Player] that has already opened the next episode.
 class PlayerController {
-  PlayerController() : player = Player();
+  PlayerController() : _slot = PlayerPromoteSlot(Player()) {
+    player = _slot.current;
+  }
 
-  Player player;
-  Player? _preloadPlayer;
-  String? _preloadedEpisodeId;
+  late Player player;
+  final PlayerPromoteSlot<Player> _slot;
 
   /// Pick a stream preferring [preferDefinition]; fall back to highest height.
   static VideoStream? pickStream(Playback playback, {String? preferDefinition}) {
@@ -94,10 +98,7 @@ class PlayerController {
     }
   }
 
-  bool isPreloaded(String episodeId) =>
-      episodeId.isNotEmpty &&
-      _preloadedEpisodeId == episodeId &&
-      _preloadPlayer != null;
+  bool isPreloaded(String episodeId) => _slot.isPreloaded(episodeId);
 
   /// Open [result] on a standby player (paused) so the next swipe can promote it.
   Future<void> preloadPlayback(
@@ -105,13 +106,11 @@ class PlayerController {
     String episodeId, {
     String? preferDefinition,
   }) async {
-    if (episodeId.isEmpty || _preloadedEpisodeId == episodeId) return;
+    if (episodeId.isEmpty || _slot.isPreloaded(episodeId)) return;
     final stream = pickStream(result.playback, preferDefinition: preferDefinition);
     if (stream == null) return;
 
-    final previous = _preloadPlayer;
-    _preloadPlayer = null;
-    _preloadedEpisodeId = null;
+    final previous = _slot.clearStandby();
     if (previous != null) {
       try {
         await previous.dispose();
@@ -119,22 +118,19 @@ class PlayerController {
     }
 
     final standby = Player();
-    _preloadPlayer = standby;
+    _slot.replaceStandby(standby);
     try {
       await applyContentKey(standby, result);
       await standby.open(Media(stream.url), play: false);
-      if (!identical(_preloadPlayer, standby)) {
+      if (!_slot.holds(standby)) {
         try {
           await standby.dispose();
         } catch (_) {}
         return;
       }
-      _preloadedEpisodeId = episodeId;
+      _slot.markReady(standby, episodeId);
     } catch (_) {
-      if (identical(_preloadPlayer, standby)) {
-        _preloadPlayer = null;
-        _preloadedEpisodeId = null;
-      }
+      _slot.discardIf(standby);
       try {
         await standby.dispose();
       } catch (_) {}
@@ -143,12 +139,9 @@ class PlayerController {
 
   /// Swap the standby player in as [player]. Caller must rebuild [VideoController].
   Future<bool> takePreloaded(String episodeId) async {
-    final standby = _preloadPlayer;
-    if (standby == null || _preloadedEpisodeId != episodeId) return false;
-    final old = player;
-    player = standby;
-    _preloadPlayer = null;
-    _preloadedEpisodeId = null;
+    final old = _slot.take(episodeId);
+    if (old == null) return false;
+    player = _slot.current;
     try {
       await old.stop();
     } catch (_) {}
@@ -158,6 +151,7 @@ class PlayerController {
     try {
       await player.play();
     } catch (_) {}
+    debugPrint('[DramaRedPlayer] promoted episode=$episodeId');
     return true;
   }
 
@@ -170,9 +164,7 @@ class PlayerController {
   Future<void> stop() => player.stop();
 
   Future<void> dispose() async {
-    final standby = _preloadPlayer;
-    _preloadPlayer = null;
-    _preloadedEpisodeId = null;
+    final standby = _slot.clearStandby();
     if (standby != null) {
       try {
         await standby.dispose();

@@ -54,8 +54,12 @@ adb -s "$SERIAL" shell am start -n "$PKG/.MainActivity" \
   --ei smoke_seconds "$SECONDS_OBS" \
   "${EXTRA_URL[@]+"${EXTRA_URL[@]}"}"
 
-TIMEOUT=$((SECONDS_OBS + 120))
-echo "watching logcat for ${TIMEOUT}s…"
+# TCG emulators often need minutes before the first Flutter frame;
+# OHG search/resolve each have 60s client timeouts.
+STARTUP_GRACE="${SMOKE_STARTUP_GRACE:-240}"
+OHG_BUDGET="${SMOKE_OHG_BUDGET:-240}"
+TIMEOUT=$((SECONDS_OBS + STARTUP_GRACE + OHG_BUDGET))
+echo "watching logcat for ${TIMEOUT}s (observe=${SECONDS_OBS}s grace=${STARTUP_GRACE}s ohg=${OHG_BUDGET}s)…"
 : >"$LOGCAT_OUT"
 adb -s "$SERIAL" logcat -v time >"$LOGCAT_OUT" &
 LOG_PID=$!
@@ -65,9 +69,14 @@ for ((i=0; i<TIMEOUT; i+=2)); do
     if grep -q 'DramaRedSmoke.*PASS' "$LOGCAT_OUT"; then RESULT=PASS; else RESULT=FAIL; fi
     break
   fi
+  if (( i > 0 && i % 30 == 0 )); then
+    echo "… waited ${i}s (no PASS/FAIL yet)"
+  fi
   sleep 2
 done
 kill "$LOG_PID" 2>/dev/null || true
+sleep 1
+kill -9 "$LOG_PID" 2>/dev/null || true
 wait "$LOG_PID" 2>/dev/null || true
 
 SMOKE_LINES="$(grep 'DramaRedSmoke' "$LOGCAT_OUT" 2>/dev/null | tail -100 || true)"
