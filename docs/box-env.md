@@ -49,7 +49,8 @@
 
 ### APK 冒烟（本轮）
 
-- TCG 下 adb 最终为 `device`；`pm path android` 可用，但 `sys.boot_completed` 长时间未到 `1`。
-- `adb install` / `pm install` 在 PackageManager 未完全就绪时失败（`PackageManagerInternal.freeStorage` NPE / Broken pipe）。
-- Debug APK 已成功构建：`apps/android/build/app/outputs/flutter-apk/app-debug.apk`（~208MB，不入库）。
-- 结论：工具链+AVD+模拟器进程可起；完整 APK 安装冒烟受冷启动/嵌套环境阻塞，需等 boot 完成或换真机。
+- KVM（`-accel on`）嵌套下 qemu 近乎空闲 / adb 长期 offline；改 **TCG `-accel off`** 后可启动。
+- 冷启动约十余分钟后 `sys.boot_completed=1`。
+- `flutter build apk --debug --split-per-abi` → `app-x86_64-debug.apk`（~90MB）。
+- **安装成功**：`pm path com.dramared.app` 有路径；`monkey` 注入 LAUNCHER 事件成功（Events injected: 1）。
+- 结论：工具链 / AVD / 模拟器 / APK 冒烟在 TCG 路径下打通。
