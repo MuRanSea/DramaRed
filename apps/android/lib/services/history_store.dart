@@ -10,12 +10,18 @@ class HistoryEntry {
     required this.positionMs,
     required this.updatedAt,
     this.seriesTitle = '',
+    this.coverUrl = '',
+    this.episodeNumber = 0,
+    this.episodeCount = 0,
   });
 
   final String seriesId;
   final String episodeId;
   final String title;
   final String seriesTitle;
+  final String coverUrl;
+  final int episodeNumber;
+  final int episodeCount;
   final int positionMs;
   final DateTime updatedAt;
 
@@ -24,6 +30,9 @@ class HistoryEntry {
         'episodeId': episodeId,
         'title': title,
         'seriesTitle': seriesTitle,
+        'coverUrl': coverUrl,
+        'episodeNumber': episodeNumber,
+        'episodeCount': episodeCount,
         'positionMs': positionMs,
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -33,6 +42,9 @@ class HistoryEntry {
         episodeId: j['episodeId'] as String? ?? '',
         title: j['title'] as String? ?? '',
         seriesTitle: j['seriesTitle'] as String? ?? '',
+        coverUrl: j['coverUrl'] as String? ?? '',
+        episodeNumber: j['episodeNumber'] as int? ?? 0,
+        episodeCount: j['episodeCount'] as int? ?? 0,
         positionMs: j['positionMs'] as int? ?? 0,
         updatedAt: DateTime.tryParse(j['updatedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0),

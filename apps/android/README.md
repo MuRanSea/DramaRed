@@ -28,7 +28,7 @@ flutter analyze   # No issues
 
 | 路由 | 说明 |
 |---|---|
-| Home | `discover()` 书城推荐 |
+| Home | `discover()` 剧场推荐 |
 | Search | `search(q)` |
 | Series | `listEpisodes` + 收藏 |
 | Player | `resolvePlayback` + media_kit（清晰度/倍速 UI） |

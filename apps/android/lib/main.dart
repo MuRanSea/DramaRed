@@ -2,11 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 
-import 'pages/favorites_page.dart';
-import 'pages/history_page.dart';
 import 'pages/home_page.dart';
-import 'pages/search_page.dart';
+import 'pages/mall_page.dart';
+import 'pages/mine_page.dart';
 import 'pages/smoke_page.dart';
+import 'pages/theater_page.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,10 +26,7 @@ class DramaRedApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DramaRed',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.dark,
       home: smoke == null
           ? const RootShell()
           : SmokePage(
@@ -52,16 +50,19 @@ class _RootShellState extends State<RootShell> {
 
   static const _pages = <Widget>[
     HomePage(),
-    SearchPage(),
-    FavoritesPage(),
-    HistoryPage(),
+    TheaterPage(),
+    MallPage(),
+    MinePage(),
   ];
+
+  bool get _mine => _index == 3;
 
   @override
   Widget build(BuildContext context) {
     final isMobile = defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS;
     return Scaffold(
+      backgroundColor: _mine ? HgColors.mineBg : HgColors.bg,
       body: Column(
         children: [
           if (!isMobile)
@@ -79,15 +80,73 @@ class _RootShellState extends State<RootShell> {
           Expanded(child: IndexedStack(index: _index, children: _pages)),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: '首页'),
-          NavigationDestination(icon: Icon(Icons.search), label: '搜索'),
-          NavigationDestination(icon: Icon(Icons.favorite_border), label: '收藏'),
-          NavigationDestination(icon: Icon(Icons.history), label: '历史'),
-        ],
+      bottomNavigationBar: _HgBottomNav(
+        index: _index,
+        light: _mine,
+        onSelect: (i) => setState(() => _index = i),
+      ),
+    );
+  }
+}
+
+class _HgBottomNav extends StatelessWidget {
+  const _HgBottomNav({
+    required this.index,
+    required this.light,
+    required this.onSelect,
+  });
+
+  final int index;
+  final bool light;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = light ? HgColors.navLight : HgColors.navDark;
+    final selected = light ? HgColors.mineText : Colors.white;
+    final muted = light ? HgColors.mineMuted : Colors.white54;
+    const items = [
+      (Icons.home_outlined, Icons.home, '首页'),
+      (Icons.grid_view_outlined, Icons.grid_view, '剧场'),
+      (Icons.storefront_outlined, Icons.storefront, '商城'),
+      (Icons.person_outline, Icons.person, '我的'),
+    ];
+    return ColoredBox(
+      color: bg,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: InkWell(
+                    onTap: () => onSelect(i),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          i == index ? items[i].$2 : items[i].$1,
+                          color: i == index ? selected : muted,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          items[i].$3,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: i == index ? selected : muted,
+                            fontWeight: i == index ? FontWeight.w700 : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
