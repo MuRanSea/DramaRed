@@ -1,0 +1,83 @@
+{
+  "contentKey": {
+    "key": "ba90…246d",
+    "version": "1"
+  },
+  "drmProtected": true,
+  "playback": {
+    "episode_id": "7701328426518465561",
+    "video_id": "v02ebeg10000dbg9qpnog65g47geumo0",
+    "media_type": "video",
+    "duration_seconds": 169,
+    "expires_at": 1793886375,
+    "protected": true,
+    "streams": [
+      {
+        "definition": "360p",
+        "quality": "normal",
+        "codec": "bytevc1",
+        "width": 360,
+        "height": 640,
+        "bitrate": 233648,
+        "size": 5021801,
+        "url": "https://v3-reading-video.qznovelvod.com/1d92f86e…[redacted]",
+        "backup_url": "https://v3-reading-video.qznovelvod.com/1d92f86e…[redacted]",
+        "protected": true,
+        "encryption": "cenc-aes-ctr"
+      },
+      {
+        "definition": "480p",
+        "quality": "normal",
+        "codec": "bytevc1",
+        "width": 480,
+        "height": 854,
+        "bitrate": 322818,
+        "size": 6900551,
+        "url": "https://v3-reading-video.qznovelvod.com/16963ebb…[redacted]",
+        "backup_url": "https://v3-reading-video.qznovelvod.com/16963ebb…[redacted]",
+        "protected": true,
+        "encryption": "cenc-aes-ctr"
+      },
+      {
+        "definition": "540p",
+        "quality": "normal",
+        "codec": "bytevc1",
+        "width": 540,
+        "height": 960,
+        "bitrate": 332198,
+        "size": 7098182,
+        "url": "https://v3-reading-video.qznovelvod.com/9b899389…[redacted]",
+        "backup_url": "https://v3-reading-video.qznovelvod.com/9b899389…[redacted]",
+        "protected": true,
+        "encryption": "cenc-aes-ctr"
+      },
+      {
+        "definition": "720p",
+        "quality": "normal",
+        "codec": "bytevc1",
+        "width": 720,
+        "height": 1280,
+        "bitrate": 368461,
+        "size": 7862224,
+        "url": "https://v3-reading-video.qznovelvod.com/3774207f…[redacted]",
+        "backup_url": "https://v3-reading-video.qznovelvod.com/3774207f…[redacted]",
+        "protected": true,
+        "encryption": "cenc-aes-ctr"
+      },
+      {
+        "definition": "1080p",
+        "quality": "normal",
+        "codec": "bytevc1",
+        "width": 1080,
+        "height": 1920,
+        "bitrate": 625735,
+        "size": 13282827,
+        "url": "https://v3-reading-video.qznovelvod.com/c4b59eca…[redacted]",
+        "backup_url": "https://v3-reading-video.qznovelvod.com/c4b59eca…[redacted]",
+        "protected": true,
+        "encryption": "cenc-aes-ctr"
+      }
+    ]
+  },
+  "warning": "openhongguo: DRM protected"
+}
