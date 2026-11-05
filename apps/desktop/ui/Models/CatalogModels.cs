@@ -84,3 +84,76 @@ public sealed class FavoritesListResponse
 {
     [JsonPropertyName("seriesIds")] public List<string> SeriesIds { get; set; } = new();
 }
+
+public sealed class PosterItem : System.ComponentModel.INotifyPropertyChanged
+{
+    public PosterItem(SeriesSummary series) => Series = series;
+
+    public SeriesSummary Series { get; }
+    public string Id => Series.Id;
+    public string Title => string.IsNullOrWhiteSpace(Series.Title) ? Series.Id : Series.Title;
+    public string Meta
+    {
+        get
+        {
+            var bits = new List<string>();
+            if (Series.EpisodeCount > 0) bits.Add($"{Series.EpisodeCount} 集");
+            if (!string.IsNullOrWhiteSpace(Series.Category)) bits.Add(Series.Category);
+            if (!string.IsNullOrWhiteSpace(Series.Author)) bits.Add(Series.Author);
+            return string.Join(" · ", bits);
+        }
+    }
+
+    private Avalonia.Media.Imaging.Bitmap? _cover;
+    public Avalonia.Media.Imaging.Bitmap? Cover
+    {
+        get => _cover;
+        set
+        {
+            _cover = value;
+            PropertyChanged?.Invoke(this, new(nameof(Cover)));
+        }
+    }
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+}
+
+public sealed class HistoryRow : System.ComponentModel.INotifyPropertyChanged
+{
+    public HistoryRow(HistoryItem raw, SeriesSummary? series, string? episodeLabel)
+    {
+        Raw = raw;
+        Series = series;
+        Title = string.IsNullOrWhiteSpace(series?.Title) ? raw.SeriesId : series!.Title;
+        Subtitle = string.IsNullOrWhiteSpace(episodeLabel)
+            ? $"ep={raw.EpisodeId} · {FormatPosition(raw.PositionMs)}"
+            : $"{episodeLabel} · {FormatPosition(raw.PositionMs)}";
+        Updated = raw.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    public HistoryItem Raw { get; }
+    public SeriesSummary? Series { get; }
+    public string Title { get; }
+    public string Subtitle { get; }
+    public string Updated { get; }
+
+    private Avalonia.Media.Imaging.Bitmap? _cover;
+    public Avalonia.Media.Imaging.Bitmap? Cover
+    {
+        get => _cover;
+        set
+        {
+            _cover = value;
+            PropertyChanged?.Invoke(this, new(nameof(Cover)));
+        }
+    }
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    private static string FormatPosition(long ms)
+    {
+        if (ms <= 0) return "开头";
+        var ts = TimeSpan.FromMilliseconds(ms);
+        return ts.TotalHours >= 1 ? ts.ToString(@"h\:mm\:ss") : ts.ToString(@"mm\:ss");
+    }
+}

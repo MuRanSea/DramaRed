@@ -48,3 +48,6 @@ apps/windows/daemon/anonymous.json
 **/app-debug.apk
 **/app-release.apk
 apps/android/android/local.properties
+
+# Desktop packaging output
+dist/

@@ -21,6 +21,8 @@ public sealed class NullMediaPlayer : IMediaPlayer
     public Task ResumeAsync(CancellationToken ct = default) => Task.CompletedTask;
     public Task StopAsync(CancellationToken ct = default) => Task.CompletedTask;
     public Task SeekAsync(TimeSpan position, CancellationToken ct = default) => Task.CompletedTask;
+    public Task SeekByAsync(TimeSpan delta, CancellationToken ct = default) => Task.CompletedTask;
+    public Task ToggleMuteAsync(CancellationToken ct = default) => Task.CompletedTask;
     public Task<TimeSpan> GetPositionAsync(CancellationToken ct = default) => Task.FromResult(TimeSpan.Zero);
 
     public void Dispose() { }

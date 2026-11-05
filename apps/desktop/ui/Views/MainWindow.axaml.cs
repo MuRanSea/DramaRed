@@ -1,8 +1,8 @@
 using System.Collections.ObjectModel;
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using DramaRed.UI.Models;
 using DramaRed.UI.Services;
@@ -12,15 +12,26 @@ namespace DramaRed.UI.Views;
 public partial class MainWindow : Window
 {
     private readonly DaemonClient _daemon = new();
+    private readonly DaemonSupervisor _supervisor = new();
     private readonly MpvPlayerHost _player = new();
-    private readonly ObservableCollection<SeriesSummary> _series = new();
+    private readonly Dictionary<string, SeriesSummary> _seriesCache = new();
+    private readonly Dictionary<string, PlaybackResponse> _playbackCache = new();
+    private readonly ObservableCollection<PosterItem> _home = new();
+    private readonly ObservableCollection<PosterItem> _theater = new();
+    private readonly ObservableCollection<PosterItem> _search = new();
+    private readonly ObservableCollection<PosterItem> _favorites = new();
+    private readonly ObservableCollection<HistoryRow> _history = new();
     private readonly ObservableCollection<EpisodeItem> _episodes = new();
-    private readonly ObservableCollection<HistoryItem> _history = new();
-    private readonly ObservableCollection<string> _favorites = new();
 
     private SeriesSummary? _currentSeries;
     private EpisodeItem? _currentEpisode;
     private List<EpisodeItem> _episodeSnapshot = new();
+    private List<PlaybackStream> _streams = new();
+    private string _preferredQuality = "自动";
+    private bool _favorited;
+    private string _lastBrowsePage = "home";
+    private string _currentPage = "home";
+    private bool _qualityApplying;
     private DispatcherTimer? _stopTimer;
     private DispatcherTimer? _progressTimer;
     private DateTimeOffset? _stopDeadline;
@@ -31,16 +42,19 @@ public partial class MainWindow : Window
         InitializeComponent();
         RateBox.SelectedIndex = 1;
         StopAfterBox.SelectedIndex = 0;
-        SeriesList.ItemsSource = _series;
-        EpisodeList.ItemsSource = _episodes;
+        HomeGrid.ItemsSource = _home;
+        TheaterGrid.ItemsSource = _theater;
+        SearchGrid.ItemsSource = _search;
+        FavoritesGrid.ItemsSource = _favorites;
         HistoryList.ItemsSource = _history;
-        FavoritesList.ItemsSource = _favorites;
+        EpisodeList.ItemsSource = _episodes;
 
         PlayerBackend.Text = $"播放后端：{_player.BackendDetail}";
+        SettingsBackend.Text = $"播放后端：{_player.BackendDetail}";
         StatusBar.Text = $"TFM=net10.0 · {_player.BackendDetail}";
         if (_player.IsNullBackend)
         {
-            PlayerStatus.Text = "无 libmpv：控件仍可用；打开流会提示安装系统库。";
+            PlayerStatus.Text = "无 libmpv：仍可浏览与选剧；打开流会提示安装系统库或将 libmpv-2.dll 放到程序旁。";
         }
 
         _player.PlaybackEnded += OnPlaybackEnded;
@@ -51,10 +65,10 @@ public partial class MainWindow : Window
         InitTray();
         Opened += async (_, _) =>
         {
+            await EnsureDaemonAsync();
             await RefreshDiscoverAsync();
             await RefreshHistoryAsync();
             await RefreshFavoritesAsync();
-            await UpdateHealthAsync();
         };
     }
 
@@ -78,96 +92,218 @@ public partial class MainWindow : Window
         catch
         {
             _tray = null;
-            MenuHideToTray.IsEnabled = false;
         }
     }
 
-    private async Task UpdateHealthAsync()
+    private async Task EnsureDaemonAsync()
     {
-        var ok = await _daemon.HealthAsync();
-        StatusBar.Text = ok
-            ? $"daemon OK · {_player.BackendDetail}"
-            : $"daemon 未响应（{ _daemon.BaseAddress}）· {_player.BackendDetail}";
-    }
-
-    private async void OnRefreshDiscover(object? sender, RoutedEventArgs e) => await RefreshDiscoverAsync();
-
-    private async Task RefreshDiscoverAsync()
-    {
-        CatalogHint.Text = "加载推荐…";
         try
         {
-            var page = await _daemon.DiscoverAsync();
-            _series.Clear();
-            foreach (var s in page?.Items ?? Enumerable.Empty<SeriesSummary>())
-            {
-                _series.Add(s);
-            }
-            CatalogHint.Text = _series.Count == 0 ? "推荐为空" : $"推荐 {_series.Count} 部";
+            var ok = await _supervisor.EnsureRunningAsync(_daemon);
+            var detail = ok
+                ? (_supervisor.StartedByUs
+                    ? $"daemon OK（已自动拉起 {_supervisor.DaemonPath}）"
+                    : $"daemon OK（{_daemon.BaseAddress}）")
+                : $"daemon 未响应（{_daemon.BaseAddress}）。请先运行 drama-daemon，或把它和本程序放在同一目录。";
+            StatusBar.Text = $"{detail} · {_player.BackendDetail}";
+            SettingsHealth.Text = detail;
         }
         catch (Exception ex)
         {
-            CatalogHint.Text = $"推荐失败：{ex.Message}";
+            StatusBar.Text = $"daemon：{ex.Message}";
+            SettingsHealth.Text = $"daemon：{ex.Message}";
         }
     }
 
-    private async void OnSearch(object? sender, RoutedEventArgs e)
+    private void OnNavChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (NavList?.SelectedItem is not ListBoxItem item) return;
+        var page = item.Tag?.ToString() ?? "home";
+        ShowPage(page);
+    }
+
+    private void ShowPage(string page)
+    {
+        if (page is "home" or "theater" or "search" or "history" or "favorites" or "settings")
+        {
+            _lastBrowsePage = page;
+        }
+
+        _currentPage = page;
+        PageHome.IsVisible = page == "home";
+        PageTheater.IsVisible = page == "theater";
+        PageSearch.IsVisible = page == "search";
+        PagePlayer.IsVisible = page == "player";
+        PageHistory.IsVisible = page == "history";
+        PageFavorites.IsVisible = page == "favorites";
+        PageSettings.IsVisible = page == "settings";
+
+        SelectNavSilently(page);
+    }
+
+    private void SelectNavSilently(string page)
+    {
+        foreach (var obj in NavList.Items)
+        {
+            if (obj is ListBoxItem item && item.Tag?.ToString() == page)
+            {
+                if (!Equals(NavList.SelectedItem, item))
+                {
+                    NavList.SelectedItem = item;
+                }
+                break;
+            }
+        }
+    }
+
+    private async void OnSearch(object? sender, RoutedEventArgs e) => await RunSearchAsync();
+
+    private async void OnSearchKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            await RunSearchAsync();
+        }
+    }
+
+    private async Task RunSearchAsync()
     {
         var q = SearchBox.Text?.Trim() ?? "";
+        ShowPage("search");
         if (string.IsNullOrEmpty(q))
         {
-            CatalogHint.Text = "请输入关键词";
+            SearchHint.Text = "请输入关键词";
             return;
         }
 
-        CatalogHint.Text = "搜索中…";
+        SearchHint.Text = "搜索中…";
         try
         {
             var page = await _daemon.SearchAsync(q);
-            _series.Clear();
+            _search.Clear();
             foreach (var s in page?.Items ?? Enumerable.Empty<SeriesSummary>())
             {
-                _series.Add(s);
+                Remember(s);
+                var poster = new PosterItem(s);
+                _search.Add(poster);
+                _ = LoadCoverAsync(poster);
             }
-            CatalogHint.Text = _series.Count == 0 ? "无结果" : $"搜索到 {_series.Count} 部";
+            SearchHint.Text = _search.Count == 0 ? "无结果" : $"搜索到 {_search.Count} 部";
         }
         catch (Exception ex)
         {
-            CatalogHint.Text = $"搜索失败：{ex.Message}（先启动 daemon）";
+            SearchHint.Text = $"搜索失败：{ex.Message}（确认 daemon 已启动）";
         }
     }
 
-    private async void OnSeriesSelected(object? sender, SelectionChangedEventArgs e)
+    private async Task RefreshDiscoverAsync()
     {
-        if (SeriesList.SelectedItem is SeriesSummary s)
+        HomeHint.Text = "加载推荐…";
+        TheaterHint.Text = "加载剧场…";
+        try
         {
-            await LoadEpisodesAsync(s);
+            var page = await _daemon.DiscoverAsync();
+            _home.Clear();
+            _theater.Clear();
+            foreach (var s in page?.Items ?? Enumerable.Empty<SeriesSummary>())
+            {
+                Remember(s);
+                var home = new PosterItem(s);
+                var theater = new PosterItem(s);
+                _home.Add(home);
+                _theater.Add(theater);
+                _ = LoadCoverAsync(home);
+                _ = LoadCoverAsync(theater);
+            }
+            var msg = _home.Count == 0 ? "推荐为空" : $"共 {_home.Count} 部";
+            HomeHint.Text = msg + " · 点击海报进入播放页（竖屏预览 + 旁侧选集）";
+            TheaterHint.Text = msg + " · 宽屏网格找剧，对齐手机「剧场」瀑布流的内容，形态改为桌面海报墙";
+        }
+        catch (Exception ex)
+        {
+            HomeHint.Text = $"推荐失败：{ex.Message}";
+            TheaterHint.Text = $"剧场失败：{ex.Message}";
         }
     }
 
-    private async void OnSeriesActivate(object? sender, Avalonia.Input.TappedEventArgs e)
+    private void Remember(SeriesSummary series)
     {
-        if (SeriesList.SelectedItem is SeriesSummary s)
+        if (!string.IsNullOrWhiteSpace(series.Id))
         {
-            await LoadEpisodesAsync(s);
+            _seriesCache[series.Id] = series;
         }
+    }
+
+    private async Task LoadCoverAsync(PosterItem item)
+    {
+        var bmp = await CoverLoader.LoadAsync(item.Series.CoverUrl);
+        if (bmp != null) item.Cover = bmp;
+    }
+
+    private async Task LoadCoverAsync(HistoryRow row)
+    {
+        var url = row.Series?.CoverUrl;
+        var bmp = await CoverLoader.LoadAsync(url);
+        if (bmp != null) row.Cover = bmp;
+    }
+
+    private async void OnPosterClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: PosterItem item })
+        {
+            await OpenSeriesAsync(item.Series, autoPlay: true);
+        }
+    }
+
+    private async Task OpenSeriesAsync(SeriesSummary series, bool autoPlay, long seekMs = 0, string? episodeId = null)
+    {
+        Remember(series);
+        _currentSeries = series;
+        SeriesTitle.Text = string.IsNullOrWhiteSpace(series.Title) ? series.Id : series.Title;
+        ShowPage("player");
+        await LoadEpisodesAsync(series);
+        await RefreshFavoriteStateAsync();
+        await SetPlayerCoverAsync(series.CoverUrl);
+
+        EpisodeItem? target = null;
+        if (!string.IsNullOrWhiteSpace(episodeId))
+        {
+            target = _episodeSnapshot.FirstOrDefault(x => x.Id == episodeId);
+        }
+        if (target == null && autoPlay)
+        {
+            var hist = _history.FirstOrDefault(h => h.Raw.SeriesId == series.Id);
+            if (hist != null)
+            {
+                target = _episodeSnapshot.FirstOrDefault(x => x.Id == hist.Raw.EpisodeId);
+                if (seekMs <= 0) seekMs = hist.Raw.PositionMs;
+            }
+            target ??= _episodeSnapshot.FirstOrDefault();
+        }
+
+        if (target != null && autoPlay)
+        {
+            await PlayEpisodeAsync(target, seekMs);
+        }
+    }
+
+    private async Task SetPlayerCoverAsync(string? url)
+    {
+        var bmp = await CoverLoader.LoadAsync(url);
+        if (bmp != null) PlayerCover.Source = bmp;
     }
 
     private async Task LoadEpisodesAsync(SeriesSummary series)
     {
-        _currentSeries = series;
-        SeriesTitle.Text = series.ListLabel;
         EpisodeHint.Text = "加载分集…";
         try
         {
             var page = await _daemon.EpisodesAsync(series.Id);
             _episodes.Clear();
             _episodeSnapshot = page?.Items?.ToList() ?? new List<EpisodeItem>();
-            foreach (var ep in _episodeSnapshot)
-            {
-                _episodes.Add(ep);
-            }
-            EpisodeHint.Text = _episodes.Count == 0 ? "暂无分集" : $"{_episodes.Count} 集";
+            foreach (var ep in _episodeSnapshot) _episodes.Add(ep);
+            EpisodeHint.Text = _episodes.Count == 0 ? "暂无分集" : $"{_episodes.Count} 集 · 点击选集";
         }
         catch (Exception ex)
         {
@@ -175,16 +311,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnReloadEpisodes(object? sender, RoutedEventArgs e)
+    private async void OnEpisodeClick(object? sender, RoutedEventArgs e)
     {
-        if (_currentSeries != null) await LoadEpisodesAsync(_currentSeries);
-    }
-
-    private async void OnEpisodeActivate(object? sender, Avalonia.Input.TappedEventArgs e)
-    {
-        if (EpisodeList.SelectedItem is EpisodeItem ep)
+        if (sender is Control { DataContext: EpisodeItem ep })
         {
-            await PlayEpisodeAsync(ep, seekMs: 0);
+            await PlayEpisodeAsync(ep, 0);
         }
     }
 
@@ -197,30 +328,38 @@ public partial class MainWindow : Window
         PlayerStatus.Text = "解析播放地址…";
         try
         {
-            var resp = await _daemon.PlaybackAsync(ep.Id);
-            var streams = resp?.Playback?.Streams?
+            if (!_playbackCache.TryGetValue(ep.Id, out var resp))
+            {
+                resp = await _daemon.PlaybackAsync(ep.Id);
+                if (resp != null) _playbackCache[ep.Id] = resp;
+            }
+
+            _streams = resp?.Playback?.Streams?
                 .Where(s => !string.IsNullOrWhiteSpace(s.Url))
                 .OrderByDescending(s => s.Height)
                 .ToList() ?? new List<PlaybackStream>();
-            if (streams.Count == 0)
+            FillQualityBox();
+
+            var chosen = PlaybackPlanner.PickStream(_streams, _preferredQuality);
+            if (chosen == null)
             {
                 PlayerStatus.Text = "无可用流 URL";
                 return;
             }
 
-            var best = streams[0];
             var key = resp?.ContentKey?.Key;
             PlayerStatus.Text =
-                $"打开 {LabelOf(best)}…{(resp?.DrmProtected == true ? "（DRM/受保护，best-effort key）" : "")}";
+                $"打开 {PlaybackPlanner.LabelOf(chosen)}…{(resp?.DrmProtected == true ? "（DRM/受保护，best-effort key）" : "")}";
 
-            await _player.OpenAsync(best.Url, string.IsNullOrWhiteSpace(key) ? null : key);
+            await _player.OpenAsync(chosen.Url, string.IsNullOrWhiteSpace(key) ? null : key);
+            _paused = false;
             if (seekMs > 0)
             {
                 await _player.SeekAsync(TimeSpan.FromMilliseconds(seekMs));
             }
 
             PlayerStatus.Text =
-                $"播放中 · {LabelOf(best)} · 画面在独立 mpv 窗口（DISPLAY 可用时）";
+                $"播放中 · {PlaybackPlanner.LabelOf(chosen)} · 竖屏预览在左侧；影像在独立 mpv 窗口";
             await _daemon.HistoryUpsertAsync(new HistoryItem
             {
                 SeriesId = _currentSeries?.Id ?? ep.SeriesId,
@@ -229,6 +368,7 @@ public partial class MainWindow : Window
                 UpdatedAt = DateTimeOffset.UtcNow,
             });
             await RefreshHistoryAsync();
+            _ = PrefetchNextAsync();
         }
         catch (Exception ex)
         {
@@ -236,20 +376,80 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string LabelOf(PlaybackStream s) =>
-        !string.IsNullOrWhiteSpace(s.Definition) ? s.Definition :
-        !string.IsNullOrWhiteSpace(s.Quality) ? s.Quality :
-        s.Height > 0 ? $"{s.Height}p" : "stream";
+    private void FillQualityBox()
+    {
+        _qualityApplying = true;
+        try
+        {
+            QualityBox.Items.Clear();
+            QualityBox.Items.Add(new ComboBoxItem { Content = "自动", Tag = "自动" });
+            foreach (var stream in _streams)
+            {
+                var label = PlaybackPlanner.LabelOf(stream);
+                QualityBox.Items.Add(new ComboBoxItem { Content = label, Tag = label });
+            }
+
+            var idx = 0;
+            if (!string.Equals(_preferredQuality, "自动", StringComparison.OrdinalIgnoreCase))
+            {
+                for (var i = 0; i < QualityBox.Items.Count; i++)
+                {
+                    if (QualityBox.Items[i] is ComboBoxItem item &&
+                        string.Equals(item.Tag?.ToString(), _preferredQuality, StringComparison.OrdinalIgnoreCase))
+                    {
+                        idx = i;
+                        break;
+                    }
+                }
+            }
+            QualityBox.SelectedIndex = idx;
+        }
+        finally
+        {
+            _qualityApplying = false;
+        }
+    }
+
+    private async void OnQualityChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_qualityApplying || QualityBox?.SelectedItem is not ComboBoxItem item) return;
+        var next = item.Tag?.ToString() ?? "自动";
+        if (string.Equals(next, _preferredQuality, StringComparison.Ordinal)) return;
+        _preferredQuality = next;
+        if (_currentEpisode != null)
+        {
+            var pos = TimeSpan.Zero;
+            try { pos = await _player.GetPositionAsync(); } catch { /* ignore */ }
+            await PlayEpisodeAsync(_currentEpisode, (long)pos.TotalMilliseconds);
+        }
+    }
+
+    private async Task PrefetchNextAsync()
+    {
+        var next = PlaybackPlanner.Next(_episodeSnapshot, _currentEpisode?.Id);
+        if (next == null || _playbackCache.ContainsKey(next.Id)) return;
+        try
+        {
+            var resp = await _daemon.PlaybackAsync(next.Id);
+            if (resp != null)
+            {
+                _playbackCache[next.Id] = resp;
+                StatusBar.Text = $"已预加载下一集 {next.ListLabel}";
+            }
+        }
+        catch
+        {
+            // prefetch is best-effort
+        }
+    }
 
     private async void OnPlaybackEnded()
     {
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             if (AutoNextBox.IsChecked != true || _currentEpisode == null) return;
-            var idx = _episodeSnapshot.FindIndex(e => e.Id == _currentEpisode.Id);
-            if (idx < 0 || idx + 1 >= _episodeSnapshot.Count) return;
-            var next = _episodeSnapshot[idx + 1];
-            EpisodeList.SelectedItem = next;
+            var next = PlaybackPlanner.Next(_episodeSnapshot, _currentEpisode.Id);
+            if (next == null) return;
             PlayerStatus.Text = $"自动连播：{next.ListLabel}";
             await PlayEpisodeAsync(next, 0);
         });
@@ -275,23 +475,77 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnPause(object? sender, RoutedEventArgs e)
+    private async void OnTogglePause(object? sender, RoutedEventArgs e)
     {
-        await _player.PauseAsync();
-        PlayerStatus.Text = "已暂停";
+        try
+        {
+            // Resume if we can; if already playing, pause. Host has no IsPaused, so toggle via pause then
+            // the UI treats this as play/pause pair: try Resume first after Pause is explicit.
+            // Use a simple heuristic: always pause if TimerHint says playing? Better: send pause/resume via
+            // GetPosition succeeding and treat consecutive clicks as toggle by tracking flag.
+        }
+        catch { /* fall through */ }
+        await TogglePauseCoreAsync();
     }
 
-    private async void OnResume(object? sender, RoutedEventArgs e)
+    private bool _paused;
+
+    private async Task TogglePauseCoreAsync()
     {
-        await _player.ResumeAsync();
-        PlayerStatus.Text = "继续播放";
+        if (_currentEpisode == null)
+        {
+            PlayerStatus.Text = "还没有在播放";
+            return;
+        }
+
+        if (_paused)
+        {
+            await _player.ResumeAsync();
+            _paused = false;
+            PlayerStatus.Text = "继续播放";
+        }
+        else
+        {
+            await _player.PauseAsync();
+            _paused = true;
+            PlayerStatus.Text = "已暂停";
+        }
     }
 
     private async void OnStop(object? sender, RoutedEventArgs e)
     {
         await PersistProgressAsync();
         await _player.StopAsync();
+        _paused = true;
         PlayerStatus.Text = "已停止";
+    }
+
+    private async void OnMute(object? sender, RoutedEventArgs e)
+    {
+        await _player.ToggleMuteAsync();
+        StatusBar.Text = "已切换静音";
+    }
+
+    private async void OnPrevEpisode(object? sender, RoutedEventArgs e)
+    {
+        var prev = PlaybackPlanner.Previous(_episodeSnapshot, _currentEpisode?.Id);
+        if (prev == null)
+        {
+            StatusBar.Text = "已经是第一集";
+            return;
+        }
+        await PlayEpisodeAsync(prev, 0);
+    }
+
+    private async void OnNextEpisode(object? sender, RoutedEventArgs e)
+    {
+        var next = PlaybackPlanner.Next(_episodeSnapshot, _currentEpisode?.Id);
+        if (next == null)
+        {
+            StatusBar.Text = "已经是最后一集";
+            return;
+        }
+        await PlayEpisodeAsync(next, 0);
     }
 
     private void OnRateChanged(object? sender, SelectionChangedEventArgs e)
@@ -331,27 +585,37 @@ public partial class MainWindow : Window
             {
                 _stopTimer.Stop();
                 await _player.PauseAsync();
+                _paused = true;
                 TimerHint.Text = "定时停止已触发";
                 PlayerStatus.Text = "定时停止已触发";
                 StopAfterBox.SelectedIndex = 0;
             }
             else
             {
-                TimerHint.Text =
-                    $"定时停止倒计时 {left.Minutes:00}:{left.Seconds % 60:00}";
+                TimerHint.Text = $"定时停止倒计时 {left.Minutes:00}:{left.Seconds % 60:00}";
             }
         };
         _stopTimer.Start();
     }
 
-    private async void OnFavoriteAdd(object? sender, RoutedEventArgs e)
+    private async void OnFavoriteToggle(object? sender, RoutedEventArgs e)
     {
         if (_currentSeries == null) return;
         try
         {
-            await _daemon.FavoritesAddAsync(_currentSeries.Id);
+            if (_favorited)
+            {
+                await _daemon.FavoritesRemoveAsync(_currentSeries.Id);
+                _favorited = false;
+            }
+            else
+            {
+                await _daemon.FavoritesAddAsync(_currentSeries.Id);
+                _favorited = true;
+            }
+            UpdateFavButton();
             await RefreshFavoritesAsync();
-            StatusBar.Text = $"已收藏 {_currentSeries.Title}";
+            StatusBar.Text = _favorited ? $"已收藏 {_currentSeries.Title}" : $"已取消收藏 {_currentSeries.Title}";
         }
         catch (Exception ex)
         {
@@ -359,23 +623,31 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnFavoriteRemove(object? sender, RoutedEventArgs e)
+    private async Task RefreshFavoriteStateAsync()
     {
-        if (_currentSeries == null) return;
+        if (_currentSeries == null)
+        {
+            _favorited = false;
+            UpdateFavButton();
+            return;
+        }
+
         try
         {
-            await _daemon.FavoritesRemoveAsync(_currentSeries.Id);
-            await RefreshFavoritesAsync();
-            StatusBar.Text = $"已取消收藏 {_currentSeries.Title}";
+            var page = await _daemon.FavoritesListAsync();
+            _favorited = page?.SeriesIds?.Contains(_currentSeries.Id) == true;
         }
-        catch (Exception ex)
+        catch
         {
-            StatusBar.Text = $"取消收藏失败：{ex.Message}";
+            _favorited = false;
         }
+        UpdateFavButton();
     }
 
-    private async void OnRefreshHistory(object? sender, RoutedEventArgs e) => await RefreshHistoryAsync();
-    private async void OnRefreshFavorites(object? sender, RoutedEventArgs e) => await RefreshFavoritesAsync();
+    private void UpdateFavButton()
+    {
+        FavToggleBtn.Content = _favorited ? "已收藏" : "收藏";
+    }
 
     private async Task RefreshHistoryAsync()
     {
@@ -385,7 +657,15 @@ public partial class MainWindow : Window
             _history.Clear();
             foreach (var h in page?.Items ?? Enumerable.Empty<HistoryItem>())
             {
-                _history.Add(h);
+                _seriesCache.TryGetValue(h.SeriesId, out var series);
+                string? epLabel = null;
+                if (_currentSeries?.Id == h.SeriesId)
+                {
+                    epLabel = _episodeSnapshot.FirstOrDefault(x => x.Id == h.EpisodeId)?.ListLabel;
+                }
+                var row = new HistoryRow(h, series, epLabel);
+                _history.Add(row);
+                _ = LoadCoverAsync(row);
             }
         }
         catch
@@ -400,43 +680,78 @@ public partial class MainWindow : Window
         {
             var page = await _daemon.FavoritesListAsync();
             _favorites.Clear();
-            foreach (var id in page?.SeriesIds ?? Enumerable.Empty<string>())
+            var ids = page?.SeriesIds ?? new List<string>();
+            FavoritesHint.Text = ids.Count == 0 ? "还没有收藏" : $"共 {ids.Count} 部";
+            foreach (var id in ids)
             {
-                _favorites.Add(id);
+                if (!_seriesCache.TryGetValue(id, out var series))
+                {
+                    series = new SeriesSummary { Id = id, Title = id };
+                }
+                var poster = new PosterItem(series);
+                _favorites.Add(poster);
+                _ = LoadCoverAsync(poster);
             }
         }
         catch
         {
-            // daemon may be down
+            FavoritesHint.Text = "无法读取收藏（daemon 未响应）";
         }
     }
 
     private async void OnHistoryActivate(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        if (HistoryList.SelectedItem is not HistoryItem h) return;
-        try
-        {
-            // Load series episodes then resume.
-            var series = _series.FirstOrDefault(s => s.Id == h.SeriesId)
-                         ?? new SeriesSummary { Id = h.SeriesId, Title = h.SeriesId };
-            await LoadEpisodesAsync(series);
-            var ep = _episodeSnapshot.FirstOrDefault(x => x.Id == h.EpisodeId)
-                     ?? new EpisodeItem { Id = h.EpisodeId, SeriesId = h.SeriesId, Title = h.EpisodeId };
-            await PlayEpisodeAsync(ep, h.PositionMs);
-        }
-        catch (Exception ex)
-        {
-            PlayerStatus.Text = $"续播失败：{ex.Message}";
-        }
+        if (HistoryList.SelectedItem is not HistoryRow row) return;
+        var series = row.Series ?? new SeriesSummary { Id = row.Raw.SeriesId, Title = row.Title };
+        await OpenSeriesAsync(series, autoPlay: true, seekMs: row.Raw.PositionMs, episodeId: row.Raw.EpisodeId);
     }
 
-    private async void OnFavoriteActivate(object? sender, Avalonia.Input.TappedEventArgs e)
+    private async void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
-        if (FavoritesList.SelectedItem is not string id) return;
-        var series = _series.FirstOrDefault(s => s.Id == id)
-                     ?? new SeriesSummary { Id = id, Title = id };
-        SeriesList.SelectedItem = _series.FirstOrDefault(s => s.Id == id);
-        await LoadEpisodesAsync(series);
+        var inText = SearchBox?.IsFocused == true ||
+                     TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
+        if (inText && e.Key is not (Key.Escape or Key.F or Key.H)) return;
+
+        var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        switch (e.Key)
+        {
+            case Key.Space when !inText:
+                e.Handled = true;
+                await TogglePauseCoreAsync();
+                break;
+            case Key.Left when !inText:
+                e.Handled = true;
+                await _player.SeekByAsync(TimeSpan.FromSeconds(-5));
+                break;
+            case Key.Right when !inText:
+                e.Handled = true;
+                await _player.SeekByAsync(TimeSpan.FromSeconds(5));
+                break;
+            case Key.Up or Key.PageUp when !inText:
+                e.Handled = true;
+                OnPrevEpisode(this, new RoutedEventArgs());
+                break;
+            case Key.Down or Key.PageDown when !inText:
+                e.Handled = true;
+                OnNextEpisode(this, new RoutedEventArgs());
+                break;
+            case Key.M when !inText:
+                e.Handled = true;
+                await _player.ToggleMuteAsync();
+                break;
+            case Key.F when ctrl:
+                e.Handled = true;
+                SearchBox?.Focus();
+                break;
+            case Key.H when ctrl:
+                e.Handled = true;
+                OnHideToTray(this, new RoutedEventArgs());
+                break;
+            case Key.Escape:
+                e.Handled = true;
+                if (_currentPage == "player") ShowPage(_lastBrowsePage);
+                break;
+        }
     }
 
     private void OnHideToTray(object? sender, RoutedEventArgs e)
@@ -453,7 +768,11 @@ public partial class MainWindow : Window
         StatusBar.Text = "已隐藏到托盘（音频继续）";
     }
 
-    private void OnShowFromTray(object? sender, RoutedEventArgs e) => ShowFromTray();
+    private async void OnAbout(object? sender, RoutedEventArgs e)
+    {
+        await EnsureDaemonAsync();
+        ShowPage("settings");
+    }
 
     private void ShowFromTray()
     {
@@ -462,10 +781,6 @@ public partial class MainWindow : Window
         if (_tray != null) _tray.IsVisible = false;
     }
 
-    private void OnExit(object? sender, RoutedEventArgs e) => Close();
-
-    private async void OnAbout(object? sender, RoutedEventArgs e) => await UpdateHealthAsync();
-
     protected override async void OnClosed(EventArgs e)
     {
         _stopTimer?.Stop();
@@ -473,13 +788,13 @@ public partial class MainWindow : Window
         try { await PersistProgressAsync(); } catch { /* ignore */ }
         _player.PlaybackEnded -= OnPlaybackEnded;
         _player.Dispose();
+        _supervisor.Dispose();
         _daemon.Dispose();
         _tray?.Dispose();
         base.OnClosed(e);
     }
 }
 
-/// <summary>Tiny ICommand helper for tray menu items.</summary>
 file sealed class SimpleCommand : System.Windows.Input.ICommand
 {
     private readonly Action _action;

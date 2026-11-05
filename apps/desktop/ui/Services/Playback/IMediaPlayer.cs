@@ -20,5 +20,7 @@ public interface IMediaPlayer : IDisposable
     Task ResumeAsync(CancellationToken ct = default);
     Task StopAsync(CancellationToken ct = default);
     Task SeekAsync(TimeSpan position, CancellationToken ct = default);
+    Task SeekByAsync(TimeSpan delta, CancellationToken ct = default);
+    Task ToggleMuteAsync(CancellationToken ct = default);
     Task<TimeSpan> GetPositionAsync(CancellationToken ct = default);
 }

@@ -40,6 +40,8 @@ public sealed class MpvPlayerHost : IDisposable
     public Task ResumeAsync(CancellationToken ct = default) => _player.ResumeAsync(ct);
     public Task StopAsync(CancellationToken ct = default) => _player.StopAsync(ct);
     public Task SeekAsync(TimeSpan position, CancellationToken ct = default) => _player.SeekAsync(position, ct);
+    public Task SeekByAsync(TimeSpan delta, CancellationToken ct = default) => _player.SeekByAsync(delta, ct);
+    public Task ToggleMuteAsync(CancellationToken ct = default) => _player.ToggleMuteAsync(ct);
     public Task<TimeSpan> GetPositionAsync(CancellationToken ct = default) => _player.GetPositionAsync(ct);
 
     public void Dispose() => _player.Dispose();

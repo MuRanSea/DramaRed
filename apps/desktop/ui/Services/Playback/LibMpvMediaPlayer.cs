@@ -34,6 +34,7 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
     private readonly IntPtr _lib;
     private IntPtr _ctx;
     private double _rate = 1.0;
+    private bool _muted;
     private Thread? _eventThread;
     private volatile bool _running;
     private readonly object _gate = new();
@@ -229,6 +230,29 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
         {
             EnsureAlive();
             _ = _mpvCommandString(_ctx, "stop");
+        }
+        return Task.CompletedTask;
+    }
+
+
+    public Task SeekByAsync(TimeSpan delta, CancellationToken ct = default)
+    {
+        lock (_gate)
+        {
+            EnsureAlive();
+            var sec = delta.TotalSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+            _ = _mpvCommandString(_ctx, $"seek {sec} relative");
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task ToggleMuteAsync(CancellationToken ct = default)
+    {
+        lock (_gate)
+        {
+            EnsureAlive();
+            _muted = !_muted;
+            SetPropertyString("mute", _muted ? "yes" : "no");
         }
         return Task.CompletedTask;
     }

@@ -28,13 +28,19 @@ dotnet run -c Release -r linux-x64   # 或 win-x64 / osx-arm64
 
 ### UI 能力
 
-- **书城 / 搜索**：`GET /api/v1/discover`、`/search`，列表可选中加载分集
-- **分集**：双击播放 → daemon playback → libmpv `loadfile`
-- **播放控件**：暂停/继续/停止、倍速、自动连播、定时停止
-- **历史 / 收藏**：读写 daemon JSON；历史双击续播（seek）
-- **托盘 / 隐藏**：无托盘环境则仅 `Hide()`，音频继续
+桌面壳**不是**手机底栏 + 竖滑全屏的搬迁，布局说明见 [`docs/desktop-ui.md`](../../docs/desktop-ui.md)。
 
-画面优先在 **独立 mpv 窗口**（`force-window=yes`，需 `DISPLAY`）。无显示时见下方 headless。
+- **左侧导航 + 顶栏搜索**：首页推荐、剧场、搜索、正在播放、历史、收藏、设置
+- **宽屏海报网格**：首页 / 剧场 / 搜索 / 收藏；点海报进入播放页
+- **播放页**：左侧 9:16 预览框 + 右侧选集 / 清晰度 / 倍速 / 自动连播 / 定时停 / 收藏
+- **预加载**：播放后预先请求下一集 playback URL
+- **历史续播**：点历史项按上次进度继续
+- **后台听**：隐藏到托盘（或仅 Hide），音频继续；`Ctrl+H`
+- **快捷键**：空格播放暂停，↑↓ 切集，←→ 快进 5 秒，M 静音，`Ctrl+F` 搜索，Esc 离开播放页
+
+画面优先在 **独立 mpv 窗口**（`force-window=yes`，需 `DISPLAY` 或 Windows 上可选 `libmpv-2.dll`）。无显示时见下方 headless。
+
+若与 `DramaRed.UI` 同目录放有 `drama-daemon`（Windows 为 `drama-daemon.exe`），主窗口启动时会在 daemon 未响应时自动拉起。
 
 ## 播放后端探测
 
@@ -74,3 +80,19 @@ dotnet run -c Release
 ## 合规
 
 仅学习研究、禁止商业；见根 README。
+
+
+## Windows 发布包
+
+在 Linux box 上交叉编译（不需要 Windows 宿主机）：
+
+```sh
+./scripts/package-windows.sh
+# → dist/DramaRed-desktop-win-x64.zip
+```
+
+解压后双击 `DramaRed.UI.exe`。程序会尝试拉起同目录的 `drama-daemon.exe`。
+
+- 需要 .NET 运行时？本脚本默认 `--self-contained true`，不需要另装。
+- 要看到画面：把 `libmpv-2.dll`（以及其依赖）放到 exe 旁；没有 DLL 时仍可浏览、搜索，播放会提示缺少后端。
+- 不要把 daemon 端口暴露到公网。
