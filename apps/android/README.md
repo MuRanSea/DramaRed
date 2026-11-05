@@ -50,3 +50,17 @@ flutter analyze   # No issues
 flutter build apk --debug
 # → build/app/outputs/flutter-apk/app-debug.apk （勿提交）
 ```
+
+## 播放体验（issue #4）
+
+Player 页支持：
+
+- 清晰度切换（切换后尽量 seek 回原进度）
+- 倍速 0.75 / 1.0 / 1.25 / 1.5 / 2.0
+- 自动连播（需从分集页传入 `episodes`）
+- 定时停止（15/30/45/60 分钟）
+- 后台继续听（切后台不主动 pause + `wakelock_plus`）
+
+单测：`flutter test test/player_controller_test.dart`
+
+> 模拟器 guest 无出网时无法拉真实流；逻辑与 UI 以单测 + analyze 验证。Host daemon API 见 `docs/smoke-artifacts/host-api-smoke.md`。
