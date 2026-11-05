@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/favorites_store.dart';
+import '../widgets/series_tile.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -10,7 +11,7 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  late Future<List<String>> _future;
+  late Future<List<FavoriteEntry>> _future;
 
   @override
   void initState() {
@@ -20,7 +21,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   void _reload() {
     setState(() {
-      _future = FavoritesStore().listSeriesIds();
+      _future = FavoritesStore().list();
     });
   }
 
@@ -33,26 +34,39 @@ class _FavoritesPageState extends State<FavoritesPage> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _reload),
         ],
       ),
-      body: FutureBuilder<List<String>>(
+      body: FutureBuilder<List<FavoriteEntry>>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-          final ids = snap.data ?? const <String>[];
-          if (ids.isEmpty) {
+          if (snap.hasError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('加载失败：${snap.error}'),
+                  const SizedBox(height: 12),
+                  FilledButton(onPressed: _reload, child: const Text('重试')),
+                ],
+              ),
+            );
+          }
+          final items = snap.data ?? const <FavoriteEntry>[];
+          if (items.isEmpty) {
             return const Center(child: Text('暂无收藏'));
           }
-          return ListView.builder(
-            itemCount: ids.length,
+          return ListView.separated(
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, i) {
-              final id = ids[i];
-              return ListTile(
-                title: Text(id),
+              final e = items[i];
+              return SeriesTile(
+                series: e.toSummary(),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
-                    await FavoritesStore().remove(id);
+                    await FavoritesStore().remove(e.seriesId);
                     _reload();
                   },
                 ),
