@@ -76,7 +76,9 @@ class _SeriesPageState extends State<SeriesPage> {
                       builder: (_) => PlayerPage(
                         title: '${widget.series.title} · ${ep.number}',
                         seriesId: widget.series.id,
+                        seriesTitle: widget.series.title,
                         episodeId: ep.id,
+                        episodes: items,
                       ),
                     ),
                   );
