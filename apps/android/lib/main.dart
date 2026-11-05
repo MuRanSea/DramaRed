@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'pages/home_page.dart';
-import 'pages/mall_page.dart';
 import 'pages/mine_page.dart';
 import 'pages/smoke_page.dart';
 import 'pages/theater_page.dart';
@@ -51,11 +50,10 @@ class _RootShellState extends State<RootShell> {
   static const _pages = <Widget>[
     HomePage(),
     TheaterPage(),
-    MallPage(),
     MinePage(),
   ];
 
-  bool get _mine => _index == 3;
+  bool get _mine => _index == 2;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +106,6 @@ class _HgBottomNav extends StatelessWidget {
     const items = [
       (Icons.home_outlined, Icons.home, '首页'),
       (Icons.grid_view_outlined, Icons.grid_view, '剧场'),
-      (Icons.storefront_outlined, Icons.storefront, '商城'),
       (Icons.person_outline, Icons.person, '我的'),
     ];
     return ColoredBox(

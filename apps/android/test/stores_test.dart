@@ -1,4 +1,5 @@
 import 'package:dramared/services/favorites_store.dart';
+import 'package:dramared/services/playback_settings_store.dart';
 import 'package:dramared/services/history_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openhongguo/openhongguo.dart';
@@ -77,6 +78,28 @@ void main() {
       // Second read uses v2 key.
       final again = await store.list();
       expect(again.length, 2);
+    });
+  });
+
+  group('PlaybackSettingsStore', () {
+    test('defaults then persists timer and background listen', () async {
+      final store = PlaybackSettingsStore();
+      final initial = await store.load();
+      expect(initial.stopAfterMinutes, 0);
+      expect(initial.backgroundListen, isTrue);
+      expect(initial.autoNext, isTrue);
+
+      await store.save(
+        const PlaybackSettings(
+          stopAfterMinutes: 30,
+          backgroundListen: true,
+          autoNext: false,
+        ),
+      );
+      final loaded = await store.load();
+      expect(loaded.stopAfterMinutes, 30);
+      expect(loaded.backgroundListen, isTrue);
+      expect(loaded.autoNext, isFalse);
     });
   });
 }

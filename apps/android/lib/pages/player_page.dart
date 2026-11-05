@@ -9,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../services/favorites_store.dart';
 import '../services/history_store.dart';
 import '../services/ohg_client.dart';
+import '../services/playback_settings_store.dart';
 import '../services/player_controller.dart';
 import '../theme/app_theme.dart';
 
@@ -39,7 +40,7 @@ class PlayerPage extends StatefulWidget {
 
 class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   late final PlayerController _controller;
-  late final VideoController _video;
+  late VideoController _video;
 
   late String _episodeId;
   late String _title;
@@ -47,8 +48,6 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   double _speed = 1.0;
   bool _autoNext = true;
   bool _backgroundListen = true;
-  /// 0 = off; otherwise minutes until pause.
-  int _stopAfterMinutes = 0;
   String _status = '解析播放地址…';
   List<String> _definitions = const ['自动'];
   DateTime? _stopDeadline;
@@ -59,8 +58,11 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   Timer? _progressTicker;
   List<Episode> _episodes = const [];
   bool _favorited = false;
-  bool _liked = false;
   bool _playing = false;
+  final _playbackCache = <String, PlaybackResult>{};
+  late final PageController _epPageController;
+  int _pageIndex = 0;
+  bool _ignorePageChange = false;
 
   @override
   void initState() {
@@ -69,22 +71,19 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     _episodeId = widget.episodeId;
     _title = widget.title;
     _episodes = widget.episodes;
+    final initialIdx = _episodes.indexWhere((e) => e.id == widget.episodeId);
+    _pageIndex = initialIdx >= 0 ? initialIdx : 0;
+    _epPageController = PageController(initialPage: _pageIndex);
     _controller = PlayerController();
     _video = VideoController(_controller.player);
-    _completedSub = _controller.player.stream.completed.listen((done) {
-      if (done) unawaited(_onCompleted());
-    });
-    _playingSub = _controller.player.stream.playing.listen((playing) {
-      if (mounted) setState(() => _playing = playing);
-      unawaited(_syncWakelock(playing));
-    });
+    _bindPlayerStreams();
     _progressTicker = Timer.periodic(const Duration(seconds: 15), (_) {
       unawaited(_persistProgress());
     });
     final resume = widget.initialPositionMs > 0
         ? Duration(milliseconds: widget.initialPositionMs)
         : null;
-    unawaited(_load(seekTo: resume));
+    unawaited(_bootstrap(seekTo: resume));
     if (widget.seriesId.isNotEmpty && _episodes.isEmpty) {
       unawaited(_ensureEpisodes());
     }
@@ -95,13 +94,52 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     }
   }
 
+  void _bindPlayerStreams() {
+    _completedSub?.cancel();
+    _playingSub?.cancel();
+    _completedSub = _controller.player.stream.completed.listen((done) {
+      if (done) unawaited(_onCompleted());
+    });
+    _playingSub = _controller.player.stream.playing.listen((playing) {
+      if (mounted) setState(() => _playing = playing);
+      unawaited(_syncWakelock(playing));
+    });
+  }
+
+  Future<void> _bootstrap({Duration? seekTo}) async {
+    try {
+      final settings = await PlaybackSettingsStore().load();
+      if (!mounted) return;
+      setState(() {
+        _autoNext = settings.autoNext;
+        _backgroundListen = settings.backgroundListen;
+      });
+      if (settings.stopAfterMinutes > 0) {
+        _armStopTimer(settings.stopAfterMinutes);
+      }
+    } catch (_) {}
+    await _load(seekTo: seekTo);
+  }
+
   Future<void> _ensureEpisodes() async {
     try {
       final client = await OhgClient.instance();
       final page = await client.listEpisodes(widget.seriesId);
       if (!mounted) return;
       setState(() => _episodes = page.items);
+      _syncPageToCurrent();
     } catch (_) {}
+  }
+
+  void _syncPageToCurrent() {
+    final i = _episodes.indexWhere((e) => e.id == _episodeId);
+    if (i < 0) return;
+    _pageIndex = i;
+    if (_epPageController.hasClients) {
+      _ignorePageChange = true;
+      _epPageController.jumpToPage(i);
+      _ignorePageChange = false;
+    }
   }
 
   int get _epNumber {
@@ -159,8 +197,13 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     await _advanceTo(next, status: '自动连播：第 ${next.number} 集…');
   }
 
-  Future<void> _advanceTo(Episode next, {String? status}) async {
+  Future<void> _advanceTo(
+    Episode next, {
+    String? status,
+    bool syncPage = true,
+  }) async {
     if (_advancing) return;
+    if (next.id == _episodeId) return;
     _advancing = true;
     try {
       if (mounted) {
@@ -171,10 +214,18 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
           if (status != null) _status = status;
         });
       }
+      if (syncPage) _syncPageToCurrent();
       await _load();
     } finally {
       _advancing = false;
     }
+  }
+
+  void _onEpisodePageChanged(int i) {
+    if (_ignorePageChange || i == _pageIndex) return;
+    if (i < 0 || i >= _episodes.length) return;
+    _pageIndex = i;
+    unawaited(_advanceTo(_episodes[i], syncPage: false, status: '第 ${_episodes[i].number} 集…'));
   }
 
   Future<void> _playNext() async {
@@ -189,28 +240,86 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     await _advanceTo(next, status: '下一集：第 ${next.number} 集…');
   }
 
-  Future<void> _load({Duration? seekTo}) async {
+  Future<void> _playPrev() async {
+    final prev = PlayerController.previousEpisode(_episodes, _episodeId);
+    if (prev == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已经是第一集')),
+      );
+      return;
+    }
+    await _advanceTo(prev, status: '上一集：第 ${prev.number} 集…');
+  }
+
+  void _applyResultMeta(PlaybackResult result) {
+    final defs = result.playback.streams
+        .where((s) => s.url.isNotEmpty)
+        .map(PlayerController.streamLabel)
+        .where((d) => d.isNotEmpty)
+        .toSet()
+        .toList();
+    _definitions = ['自动', ...defs];
+    _status = result.playback.protected ? '受保护流（尝试 ClearKey/decryption_key）' : '播放中';
+  }
+
+  Future<void> _prefetchNext() async {
+    final next = PlayerController.nextEpisode(_episodes, _episodeId);
+    if (next == null) return;
+    try {
+      var result = _playbackCache[next.id];
+      result ??= await (await OhgClient.instance()).resolvePlayback(next.id);
+      _playbackCache[next.id] = result;
+      await _controller.preloadPlayback(
+        result,
+        next.id,
+        preferDefinition: _definition,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _load({Duration? seekTo, bool forceResolve = false}) async {
     if (_episodeId.isEmpty) {
       setState(() => _status = '缺少 episodeId');
       return;
     }
     try {
       final client = await OhgClient.instance();
-      final result = await client.resolvePlayback(_episodeId);
-      final defs = result.playback.streams
-          .where((s) => s.url.isNotEmpty)
-          .map(PlayerController.streamLabel)
-          .where((d) => d.isNotEmpty)
-          .toSet()
-          .toList();
-      if (mounted) {
-        setState(() {
-          _definitions = ['自动', ...defs];
-          _status = result.playback.protected
-              ? '受保护流（尝试 ClearKey/decryption_key）'
-              : '播放中';
-        });
+      if (forceResolve) {
+        _playbackCache.remove(_episodeId);
       }
+
+      if (!forceResolve && await _controller.takePreloaded(_episodeId)) {
+        _bindPlayerStreams();
+        if (mounted) setState(() {});
+        final cached = _playbackCache[_episodeId];
+        if (cached != null && mounted) {
+          setState(() => _applyResultMeta(cached));
+        } else {
+          try {
+            final result = await client.resolvePlayback(_episodeId);
+            _playbackCache[_episodeId] = result;
+            if (mounted) setState(() => _applyResultMeta(result));
+          } catch (_) {}
+        }
+        await _controller.setRate(_speed);
+        if (seekTo != null && seekTo > Duration.zero) {
+          try {
+            await _controller.player.seek(seekTo);
+          } catch (_) {}
+        }
+        await HistoryStore().upsert(
+          _historySnapshot(positionMs: seekTo?.inMilliseconds),
+        );
+        unawaited(_prefetchNext());
+        return;
+      }
+
+      final result = forceResolve
+          ? await client.resolvePlayback(_episodeId)
+          : (_playbackCache[_episodeId] ?? await client.resolvePlayback(_episodeId));
+      _playbackCache[_episodeId] = result;
+      if (mounted) setState(() => _applyResultMeta(result));
       await _controller.openPlayback(
         result,
         preferDefinition: _definition,
@@ -220,6 +329,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
       await HistoryStore().upsert(
         _historySnapshot(positionMs: seekTo?.inMilliseconds),
       );
+      unawaited(_prefetchNext());
     } catch (e) {
       if (mounted) setState(() => _status = '播放失败：$e');
     }
@@ -229,41 +339,27 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     final next = v ?? '自动';
     final pos = _controller.player.state.position;
     setState(() => _definition = next);
-    await _load(seekTo: pos);
+    await _load(seekTo: pos, forceResolve: true);
   }
 
-  void _setStopAfter(int minutes) {
+  void _armStopTimer(int minutes) {
     _stopTicker?.cancel();
-    setState(() {
-      _stopAfterMinutes = minutes;
-      if (minutes <= 0) {
-        _stopDeadline = null;
-        _status = _status.contains('定时') ? '播放中' : _status;
-        return;
-      }
-      _stopDeadline = DateTime.now().add(Duration(minutes: minutes));
-    });
-    if (minutes <= 0) return;
+    if (minutes <= 0) {
+      _stopDeadline = null;
+      return;
+    }
+    _stopDeadline = DateTime.now().add(Duration(minutes: minutes));
     _stopTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       final deadline = _stopDeadline;
       if (deadline == null) return;
-      final left = deadline.difference(DateTime.now());
-      if (left <= Duration.zero) {
-        _stopTicker?.cancel();
-        unawaited(_controller.pause());
-        unawaited(WakelockPlus.disable());
-        if (mounted) {
-          setState(() {
-            _stopAfterMinutes = 0;
-            _stopDeadline = null;
-            _status = '定时停止已触发';
-          });
-        }
-      } else if (mounted) {
+      if (deadline.difference(DateTime.now()) > Duration.zero) return;
+      _stopTicker?.cancel();
+      unawaited(_controller.pause());
+      unawaited(WakelockPlus.disable());
+      if (mounted) {
         setState(() {
-          final m = left.inMinutes;
-          final s = left.inSeconds % 60;
-          _status = '定时停止倒计时 ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+          _stopDeadline = null;
+          _status = '定时停止已触发';
         });
       }
     });
@@ -295,6 +391,69 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     }
   }
 
+  void _showPickerSheet({
+    required String title,
+    required List<Widget> children,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: HgColors.bgElevated,
+      builder: (ctx) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+              ...children,
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDefinitionSheet() {
+    _showPickerSheet(
+      title: '清晰度',
+      children: [
+        for (final d in _definitions)
+          ListTile(
+            title: Text(d),
+            trailing: d == _definition ? const Icon(Icons.check, color: HgColors.accent) : null,
+            onTap: () {
+              Navigator.pop(context);
+              unawaited(_switchDefinition(d));
+            },
+          ),
+      ],
+    );
+  }
+
+  void _showSpeedSheet() {
+    const rates = [0.75, 1.0, 1.25, 1.5, 2.0];
+    _showPickerSheet(
+      title: '倍速',
+      children: [
+        for (final rate in rates)
+          ListTile(
+            title: Text('${rate}x'),
+            trailing: rate == _speed ? const Icon(Icons.check, color: HgColors.accent) : null,
+            onTap: () async {
+              Navigator.pop(context);
+              setState(() => _speed = rate);
+              await _controller.setRate(rate);
+            },
+          ),
+      ],
+    );
+  }
+
   void _showEpisodeSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -310,7 +469,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
-                    '剧集 · 共 ${_episodes.length} 集',
+                    '选集 · 共 ${_episodes.length} 集',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -358,104 +517,6 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     );
   }
 
-  void _showMoreSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: HgColors.bgElevated,
-      builder: (ctx) {
-        return SafeArea(
-          child: StatefulBuilder(
-            builder: (context, setSheet) {
-              return ListView(
-                shrinkWrap: true,
-                children: [
-                  ListTile(
-                    title: const Text('清晰度'),
-                    trailing: DropdownButton<String>(
-                      dropdownColor: HgColors.bgElevated,
-                      value: _definitions.contains(_definition) ? _definition : '自动',
-                      items: _definitions
-                          .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                          .toList(),
-                      onChanged: (v) {
-                        Navigator.pop(ctx);
-                        unawaited(_switchDefinition(v));
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    title: const Text('倍速'),
-                    trailing: DropdownButton<double>(
-                      dropdownColor: HgColors.bgElevated,
-                      value: _speed,
-                      items: const [
-                        DropdownMenuItem(value: 0.75, child: Text('0.75x')),
-                        DropdownMenuItem(value: 1.0, child: Text('1.0x')),
-                        DropdownMenuItem(value: 1.25, child: Text('1.25x')),
-                        DropdownMenuItem(value: 1.5, child: Text('1.5x')),
-                        DropdownMenuItem(value: 2.0, child: Text('2.0x')),
-                      ],
-                      onChanged: (v) async {
-                        final rate = v ?? 1.0;
-                        setState(() => _speed = rate);
-                        setSheet(() {});
-                        await _controller.setRate(rate);
-                      },
-                    ),
-                  ),
-                  SwitchListTile(
-                    title: const Text('自动连播'),
-                    subtitle: Text(
-                      _episodes.isEmpty
-                          ? '未传入分集列表（从剧场/搜索进播可连播）'
-                          : '播完自动下一集（共 ${_episodes.length} 集）',
-                    ),
-                    value: _autoNext,
-                    onChanged: (v) {
-                      setState(() => _autoNext = v);
-                      setSheet(() {});
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('定时停止'),
-                    subtitle: Text(
-                      _stopAfterMinutes == 0 ? '关闭' : '$_stopAfterMinutes 分钟后暂停',
-                    ),
-                    trailing: DropdownButton<int>(
-                      dropdownColor: HgColors.bgElevated,
-                      value: _stopAfterMinutes,
-                      items: const [
-                        DropdownMenuItem(value: 0, child: Text('关闭')),
-                        DropdownMenuItem(value: 15, child: Text('15 分钟')),
-                        DropdownMenuItem(value: 30, child: Text('30 分钟')),
-                        DropdownMenuItem(value: 45, child: Text('45 分钟')),
-                        DropdownMenuItem(value: 60, child: Text('60 分钟')),
-                      ],
-                      onChanged: (v) {
-                        _setStopAfter(v ?? 0);
-                        setSheet(() {});
-                      },
-                    ),
-                  ),
-                  SwitchListTile(
-                    title: const Text('后台 / 隐藏继续听'),
-                    subtitle: const Text('开启时切后台不主动暂停，并保持 wakelock'),
-                    value: _backgroundListen,
-                    onChanged: (v) async {
-                      setState(() => _backgroundListen = v);
-                      setSheet(() {});
-                      await _syncWakelock(_controller.player.state.playing);
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -463,6 +524,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     _progressTicker?.cancel();
     _completedSub?.cancel();
     _playingSub?.cancel();
+    _epPageController.dispose();
     unawaited(_persistProgress());
     unawaited(WakelockPlus.disable());
     _controller.dispose();
@@ -477,6 +539,9 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     final epLabel = epIndex >= 0
         ? '第 ${_episodes[epIndex].number == 0 ? epIndex + 1 : _episodes[epIndex].number}/${_episodes.length} 集'
         : _status;
+    final speedLabel = _speed == _speed.roundToDouble()
+        ? '${_speed.toInt()}x'
+        : '${_speed}x';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -485,15 +550,12 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
         body: Stack(
           fit: StackFit.expand,
           children: [
-            GestureDetector(
-              onTap: _togglePlay,
-              child: ColoredBox(
-                color: Colors.black,
-                child: Video(
-                  controller: _video,
-                  fit: BoxFit.cover,
-                  controls: NoVideoControls,
-                ),
+            ColoredBox(
+              color: Colors.black,
+              child: Video(
+                controller: _video,
+                fit: BoxFit.cover,
+                controls: NoVideoControls,
               ),
             ),
             if (!_playing)
@@ -502,8 +564,8 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                   child: Icon(Icons.play_arrow_rounded, size: 72, color: Colors.white70),
                 ),
               ),
-            ...[
-              const DecoratedBox(
+            const IgnorePointer(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -518,130 +580,175 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
                   ),
                 ),
               ),
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                        onPressed: () => Navigator.of(context).maybePop(),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.more_horiz, color: Colors.white),
-                        onPressed: _showMoreSheet,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 12,
-                bottom: 140,
-                child: Column(
-                  children: [
-                    const CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Color(0xFFE8E0D4),
-                      child: Icon(Icons.person, color: Color(0xFF8A7A60)),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: HgColors.accent,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text('关注', style: TextStyle(color: Colors.white, fontSize: 11)),
-                    ),
-                    const SizedBox(height: 18),
-                    _SideAction(
-                      icon: _liked ? Icons.favorite : Icons.favorite_border,
-                      label: _liked ? '已赞' : '赞',
-                      onTap: () => setState(() => _liked = !_liked),
-                    ),
-                    const SizedBox(height: 16),
-                    _SideAction(
-                      icon: Icons.chat_bubble_outline,
-                      label: '评论',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('评论占位')),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _SideAction(
-                      icon: _favorited ? Icons.star : Icons.star_border,
-                      label: _favorited ? '已收藏' : '收藏',
-                      onTap: () => unawaited(_toggleFav()),
-                    ),
-                    const SizedBox(height: 16),
-                    _SideAction(
-                      icon: Icons.reply,
-                      label: '分享',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('分享「$displayTitle」占位')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                left: 16,
-                right: 80,
-                bottom: 28,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      epLabel,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _status,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white38, fontSize: 11),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _PillButton(
-                          icon: Icons.grid_view,
-                          label: '剧集',
-                          onTap: _showEpisodeSheet,
-                        ),
-                        const SizedBox(width: 10),
-                        _PillButton(
-                          icon: Icons.skip_next,
-                          label: '下一集',
-                          onTap: () => unawaited(_playNext()),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
+            _buildInteractionLayer(
+              displayTitle: displayTitle,
+              epLabel: epLabel,
+              speedLabel: speedLabel,
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInteractionLayer({
+    required String displayTitle,
+    required String epLabel,
+    required String speedLabel,
+  }) {
+    final chrome = _PlayerChrome(
+      displayTitle: displayTitle,
+      epLabel: epLabel,
+      status: _status,
+      definition: _definition,
+      speedLabel: speedLabel,
+      favorited: _favorited,
+      onBack: () => Navigator.of(context).maybePop(),
+      onFavorite: () => unawaited(_toggleFav()),
+      onDefinition: _showDefinitionSheet,
+      onSpeed: _showSpeedSheet,
+      onEpisodes: _showEpisodeSheet,
+    );
+    if (_episodes.length <= 1) {
+      return GestureDetector(
+        onTap: _togglePlay,
+        onVerticalDragEnd: (details) {
+          final v = details.primaryVelocity ?? 0;
+          if (v < -400) {
+            unawaited(_playNext());
+          } else if (v > 400) {
+            unawaited(_playPrev());
+          }
+        },
+        child: chrome,
+      );
+    }
+    return PageView.builder(
+      controller: _epPageController,
+      scrollDirection: Axis.vertical,
+      itemCount: _episodes.length,
+      onPageChanged: _onEpisodePageChanged,
+      itemBuilder: (context, i) {
+        return GestureDetector(
+          onTap: _togglePlay,
+          child: chrome,
+        );
+      },
+    );
+  }
+}
+
+class _PlayerChrome extends StatelessWidget {
+  const _PlayerChrome({
+    required this.displayTitle,
+    required this.epLabel,
+    required this.status,
+    required this.definition,
+    required this.speedLabel,
+    required this.favorited,
+    required this.onBack,
+    required this.onFavorite,
+    required this.onDefinition,
+    required this.onSpeed,
+    required this.onEpisodes,
+  });
+
+  final String displayTitle;
+  final String epLabel;
+  final String status;
+  final String definition;
+  final String speedLabel;
+  final bool favorited;
+  final VoidCallback onBack;
+  final VoidCallback onFavorite;
+  final VoidCallback onDefinition;
+  final VoidCallback onSpeed;
+  final VoidCallback onEpisodes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+              onPressed: onBack,
+            ),
+          ),
+        ),
+        Positioned(
+          right: 12,
+          bottom: 140,
+          child: _SideAction(
+            icon: favorited ? Icons.star : Icons.star_border,
+            label: favorited ? '已收藏' : '收藏',
+            onTap: onFavorite,
+          ),
+        ),
+        Positioned(
+          left: 16,
+          right: 80,
+          bottom: 28,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                displayTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                epLabel,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                status,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '上滑下一集 · 下滑上一集',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: [
+                  _PillButton(
+                    icon: Icons.high_quality_outlined,
+                    label: definition,
+                    onTap: onDefinition,
+                  ),
+                  _PillButton(
+                    icon: Icons.speed,
+                    label: speedLabel,
+                    onTap: onSpeed,
+                  ),
+                  _PillButton(
+                    icon: Icons.grid_view,
+                    label: '选集',
+                    onTap: onEpisodes,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
