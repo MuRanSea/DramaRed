@@ -54,3 +54,13 @@
 - `flutter build apk --debug --split-per-abi` → `app-x86_64-debug.apk`（~90MB）。
 - **安装成功**：`pm path com.dramared.app` 有路径；`monkey` 注入 LAUNCHER 事件成功（Events injected: 1）。
 - 结论：工具链 / AVD / 模拟器 / APK 冒烟在 TCG 路径下打通。
+
+## Emulator E2E（issue #3）
+
+```sh
+# 需已启动 AVD；APK 先 flutter build apk --debug --split-per-abi
+./scripts/emulator_e2e.sh
+# 产物：docs/smoke-artifacts/summary-*.md + logcat-*.txt
+```
+
+Intent 冒烟：`am start … --ez smoke_auto true --es smoke_query 短剧`
