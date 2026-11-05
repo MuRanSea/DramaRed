@@ -1,46 +1,130 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="using:DramaRed.UI.Models"
         x:Class="DramaRed.UI.Views.MainWindow"
-        Width="1100" Height="720"
+        Width="1180" Height="760"
         Title="DramaRed (desktop)">
   <DockPanel>
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="文件">
+        <MenuItem Header="刷新书城" Click="OnRefreshDiscover"/>
         <MenuItem Header="退出" Click="OnExit"/>
+      </MenuItem>
+      <MenuItem Header="窗口">
+        <MenuItem Header="隐藏到托盘（音频继续）" Name="MenuHideToTray" Click="OnHideToTray"/>
+        <MenuItem Header="显示主窗口" Click="OnShowFromTray"/>
       </MenuItem>
       <MenuItem Header="帮助">
         <MenuItem Header="关于 / 后端…" Click="OnAbout"/>
       </MenuItem>
     </Menu>
     <TextBlock DockPanel.Dock="Bottom" Margin="8" Name="StatusBar" Text="就绪"/>
-    <TabControl>
-      <TabItem Header="首页 / 书城">
-        <TextBlock Margin="16" Text="推荐/书城 — GET /api/v1/discover"/>
-      </TabItem>
-      <TabItem Header="搜索">
-        <StackPanel Margin="16" Spacing="8">
-          <TextBox PlaceholderText="搜索短剧" Name="SearchBox"/>
-          <Button Content="搜索" Click="OnSearch"/>
-          <TextBlock Name="SearchHint" Text="调用 daemon /api/v1/search"/>
-        </StackPanel>
-      </TabItem>
-      <TabItem Header="播放">
-        <DockPanel Margin="16">
-          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="12">
-            <TextBlock VerticalAlignment="Center" Name="PlayerBackend" Text="播放后端：探测中…"/>
+    <Grid ColumnDefinitions="2*,3*,2.5*">
+      <!-- Left: discover + search -->
+      <DockPanel Grid.Column="0" Margin="8">
+        <StackPanel DockPanel.Dock="Top" Spacing="6">
+          <TextBlock FontWeight="Bold" Text="书城 / 搜索"/>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBox Width="160" Name="SearchBox" PlaceholderText="关键词"/>
+            <Button Content="搜索" Click="OnSearch"/>
+            <Button Content="推荐" Click="OnRefreshDiscover"/>
           </StackPanel>
-          <Border Background="#22000000" MinHeight="360">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Text="IMediaPlayer 表面占位（libmpv 跨平台）"/>
-          </Border>
-        </DockPanel>
-      </TabItem>
-      <TabItem Header="收藏">
-        <TextBlock Margin="16" Text="收藏 — /api/v1/favorites"/>
-      </TabItem>
-      <TabItem Header="历史">
-        <TextBlock Margin="16" Text="历史/续播 — /api/v1/history"/>
-      </TabItem>
-    </TabControl>
+          <TextBlock Name="CatalogHint" Text="加载推荐或搜索…"/>
+        </StackPanel>
+        <ListBox Name="SeriesList" Margin="0,8,0,0"
+                 DoubleTapped="OnSeriesActivate"
+                 SelectionChanged="OnSeriesSelected">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="models:SeriesSummary">
+              <TextBlock Text="{Binding ListLabel}" TextWrapping="Wrap"/>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <!-- Middle: episodes -->
+      <DockPanel Grid.Column="1" Margin="8">
+        <StackPanel DockPanel.Dock="Top" Spacing="6">
+          <TextBlock FontWeight="Bold" Name="SeriesTitle" Text="分集"/>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="收藏" Name="FavAddBtn" Click="OnFavoriteAdd"/>
+            <Button Content="取消收藏" Click="OnFavoriteRemove"/>
+            <Button Content="刷新分集" Click="OnReloadEpisodes"/>
+          </StackPanel>
+          <TextBlock Name="EpisodeHint" Text="选择左侧剧集"/>
+        </StackPanel>
+        <ListBox Name="EpisodeList" Margin="0,8,0,0" DoubleTapped="OnEpisodeActivate">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="models:EpisodeItem">
+              <TextBlock Text="{Binding ListLabel}"/>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <!-- Right: player + history/fav -->
+      <DockPanel Grid.Column="2" Margin="8">
+        <TabControl>
+          <TabItem Header="播放">
+            <ScrollViewer>
+              <StackPanel Spacing="8" Margin="4">
+                <Border Background="#22000000" MinHeight="160" CornerRadius="6" Padding="12">
+                  <StackPanel Spacing="4">
+                    <TextBlock Name="PlayerTitle" FontWeight="SemiBold" Text="未播放"/>
+                    <TextBlock Name="PlayerBackend" TextWrapping="Wrap" Text="播放后端：…"/>
+                    <TextBlock Name="PlayerStatus" TextWrapping="Wrap" Text="选择分集后双击播放；画面在独立 mpv 窗口（或 audio-only）。"/>
+                  </StackPanel>
+                </Border>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="播放/继续" Click="OnResume"/>
+                  <Button Content="暂停" Click="OnPause"/>
+                  <Button Content="停止" Click="OnStop"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock VerticalAlignment="Center" Text="倍速"/>
+                  <ComboBox Name="RateBox" Width="90" SelectionChanged="OnRateChanged">
+                    <ComboBoxItem Tag="0.75" Content="0.75x"/>
+                    <ComboBoxItem Tag="1.0" Content="1.0x"/>
+                    <ComboBoxItem Tag="1.25" Content="1.25x"/>
+                    <ComboBoxItem Tag="1.5" Content="1.5x"/>
+                    <ComboBoxItem Tag="2.0" Content="2.0x"/>
+                  </ComboBox>
+                </StackPanel>
+                <CheckBox Name="AutoNextBox" IsChecked="True" Content="自动连播下一集"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock VerticalAlignment="Center" Text="定时停"/>
+                  <ComboBox Name="StopAfterBox" Width="120" SelectionChanged="OnStopAfterChanged">
+                    <ComboBoxItem Tag="0" Content="关闭"/>
+                    <ComboBoxItem Tag="15" Content="15 分钟"/>
+                    <ComboBoxItem Tag="30" Content="30 分钟"/>
+                    <ComboBoxItem Tag="45" Content="45 分钟"/>
+                    <ComboBoxItem Tag="60" Content="60 分钟"/>
+                  </ComboBox>
+                </StackPanel>
+                <TextBlock Name="TimerHint" Text="定时停止：关"/>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+          <TabItem Header="历史">
+            <DockPanel>
+              <Button DockPanel.Dock="Top" Content="刷新历史" Margin="0,0,0,6" Click="OnRefreshHistory"/>
+              <ListBox Name="HistoryList" DoubleTapped="OnHistoryActivate">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="models:HistoryItem">
+                    <TextBlock Text="{Binding ListLabel}" TextWrapping="Wrap"/>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+          </TabItem>
+          <TabItem Header="收藏">
+            <DockPanel>
+              <Button DockPanel.Dock="Top" Content="刷新收藏" Margin="0,0,0,6" Click="OnRefreshFavorites"/>
+              <ListBox Name="FavoritesList" DoubleTapped="OnFavoriteActivate"/>
+            </DockPanel>
+          </TabItem>
+        </TabControl>
+      </DockPanel>
+    </Grid>
   </DockPanel>
 </Window>

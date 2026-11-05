@@ -7,6 +7,12 @@ public sealed class NullMediaPlayer : IMediaPlayer
     public double Rate { get; set; } = 1.0;
     public TimeSpan? StopAfter { get; set; }
 
+    public event Action? PlaybackEnded
+    {
+        add { }
+        remove { }
+    }
+
     public Task OpenAsync(string url, string? contentKeyHex = null, CancellationToken ct = default) =>
         throw new InvalidOperationException(
             "No media backend available. Install system libmpv (Linux/macOS) or place libmpv-2.dll beside the app (Windows).");
@@ -14,5 +20,8 @@ public sealed class NullMediaPlayer : IMediaPlayer
     public Task PauseAsync(CancellationToken ct = default) => Task.CompletedTask;
     public Task ResumeAsync(CancellationToken ct = default) => Task.CompletedTask;
     public Task StopAsync(CancellationToken ct = default) => Task.CompletedTask;
+    public Task SeekAsync(TimeSpan position, CancellationToken ct = default) => Task.CompletedTask;
+    public Task<TimeSpan> GetPositionAsync(CancellationToken ct = default) => Task.FromResult(TimeSpan.Zero);
+
     public void Dispose() { }
 }

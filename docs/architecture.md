@@ -25,18 +25,19 @@
 ```
 
 - **业务**：直接调用 `OpenhongguoClient`（discover / search / listEpisodes / resolvePlayback）。
-- **播放**：`media_kit` + `media_kit_video`；ClearKey / 后台音频会话仅在依赖与注释中预留，本骨架不实现。
-- **本地状态**：历史 / 收藏先用简单本地持久化占位（SharedPreferences / 文件），后续可换 isar/hive。
+- **播放**：`media_kit` + `media_kit_video`；清晰度/倍速/连播/定时停/wakelock 后台听已接；ClearKey best-effort。
+- **本地状态**：历史 / 收藏 SharedPreferences（收藏 v2 含元数据）。
 
 模块建议：
 
 | 路径 | 职责 |
 |---|---|
-| `lib/pages/*` | 页面占位 |
+| `lib/pages/*` | 书城/搜索/分集/播放/收藏/历史 |
 | `lib/services/ohg_client.dart` | openhongguo 封装 |
 | `lib/services/history_store.dart` | 播放历史 / 续播进度 |
 | `lib/services/favorites_store.dart` | 收藏 |
-| `lib/services/player_controller.dart` | media_kit 控制（占位） |
+| `lib/services/player_controller.dart` | media_kit 控制 |
+| `lib/widgets/series_tile.dart` | 共用剧集行 |
 
 ## Desktop（Avalonia + Go + libmpv，跨平台）
 
@@ -45,10 +46,10 @@
 │  Avalonia UI     │ ◄──────────► │  Go daemon (drama-daemon) │
 │  - 列表/搜索/收藏 │  127.0.0.1   │  openhongguo/sdk v0.2.0  │
 │  - 历史/设置     │  :17890      │  + 本地 history/favorites │
-│  - 嵌入播放区    │              └──────────────────────────┘
+│  - mpv 外开窗口  │              └──────────────────────────┘
 │        │         │
 │        ▼         │
-│  libmpv (本地)   │  播放 URL / 密钥由 daemon 的 playback 接口返回
+│  libmpv (本地)   │  OpenAsync loadfile；URL/密钥来自 playback
 └──────────────────┘
 ```
 
@@ -72,7 +73,7 @@
 | GET/POST/DELETE | `/api/v1/history` | 播放历史 / 续播 |
 | GET/POST/DELETE | `/api/v1/favorites` | 收藏 |
 
-实现状态：路由与 DTO 已就位；search/discover/episodes/playback 已接 openhongguo；本地 history/favorites 为 JSON 文件。
+实现状态：路由与 DTO 已就位；search/discover/episodes/playback 已接 openhongguo；本地 history/favorites 为 JSON 文件；Avalonia UI 已联调（书城/搜索/分集/播放/历史/收藏/倍速/连播/定时停/托盘隐藏）。
 
 ### 模块边界
 
@@ -110,3 +111,18 @@
 - `LibMpvMediaPlayer`：按 OS 探测 libmpv（Linux `.so` / macOS `.dylib` / Windows 可选 `.dll`）。
 - `NullMediaPlayer`：探测失败时的安全回退。
 - UI **不得**写死 Win32 路径；Windows DLL 仅为可选实现。
+
+
+## 完成度（跟踪）
+
+| Issue | 主题 | 状态 |
+|---|---|---|
+| #3 | Android 模拟器 E2E | 关闭 |
+| #4 | Android 播放体验 | 关闭 |
+| #5 | Android 书城 UI | 关闭 |
+| #6 | Android 历史/收藏 | 关闭 |
+| #7 | Desktop Avalonia UI | 本批 |
+| #8 | Desktop libmpv 出画 | 本批 |
+| #9 | Desktop 倍速/连播/定时/托盘 | 本批 |
+| #10 | Desktop 历史/收藏 | 本批 |
+| #11 | docs 对齐 | 本批 |

@@ -16,7 +16,7 @@
 
 原 `apps/windows` 已重命名为 **`apps/desktop`**（跨平台，不绑定 Win32）。
 
-播放：`IMediaPlayer` / `LibMpvMediaPlayer`（探测系统 libmpv）/ `NullMediaPlayer`；Windows `libmpv-2.dll` 仅可选。
+播放：`IMediaPlayer` / `LibMpvMediaPlayer.OpenAsync`（box 上 `apps/desktop/tools/mpv-smoke` PASS）/ `NullMediaPlayer`；Windows `libmpv-2.dll` 仅可选；有 DISPLAY 时 mpv 外开窗口。
 
 ## libmpv（Linux）
 

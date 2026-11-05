@@ -10,10 +10,15 @@ public interface IMediaPlayer : IDisposable
     double Rate { get; set; }
     TimeSpan? StopAfter { get; set; }
 
+    /// <summary>Raised when the current file ends (for auto-next).</summary>
+    event Action? PlaybackEnded;
+
     /// <summary>Open a media URL. <paramref name="contentKeyHex"/> is optional ClearKey material.</summary>
     Task OpenAsync(string url, string? contentKeyHex = null, CancellationToken ct = default);
 
     Task PauseAsync(CancellationToken ct = default);
     Task ResumeAsync(CancellationToken ct = default);
     Task StopAsync(CancellationToken ct = default);
+    Task SeekAsync(TimeSpan position, CancellationToken ct = default);
+    Task<TimeSpan> GetPositionAsync(CancellationToken ct = default);
 }

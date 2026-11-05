@@ -2,7 +2,7 @@
 
 个人学习 / 自用的短剧客户端骨架（Android + Desktop 跨平台）。
 
-> **首版可运行路径**：Desktop daemon 已接真实 openhongguo；Android 已接搜索→分集→playback→media_kit（需真机/模拟器验证画面）。完整播放体验与后台听仍待完善。
+> **可运行路径**：Android 书城/搜索/播放体验/历史收藏已接；Desktop Avalonia 已联调 daemon + libmpv（独立窗口出画）。模拟器 guest 无出网时 OHG 需 host/文档说明。
 
 ## 功能（目标）
 
@@ -71,13 +71,13 @@ flutter pub get
 flutter run
 ```
 
-页面占位：`Home` / `Search` / `Player` / `Favorites` / `History`。播放与 ClearKey / 后台听仅预留依赖与注释，未实现。
+页面：`Home`（书城）/ `Search` / `Player`（清晰度·倍速·连播·定时停·后台听）/ `Favorites` / `History`（续播）。
 
 ### Desktop（Linux / Windows / macOS）
 
 见 [`apps/desktop/README.md`](apps/desktop/README.md)。
 
-简要：先启动 Go daemon（默认 `http://127.0.0.1:17890`），再启动 Avalonia UI；播放经 `IMediaPlayer` 探测系统 libmpv（Windows DLL 可选），业务数据走 daemon HTTP JSON。
+简要：先启动 Go daemon（默认 `http://127.0.0.1:17890`），再启动 Avalonia UI。播放经 `LibMpvMediaPlayer.OpenAsync`（Linux/macOS 系统 libmpv；Windows 可选 DLL）；无库时回退 `NullMediaPlayer` 不崩。
 
 ### Go daemon 单独跑
 
