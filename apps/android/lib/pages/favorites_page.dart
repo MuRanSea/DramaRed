@@ -19,7 +19,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   void _reload() {
-    setState(() => _future = FavoritesStore().listSeriesIds());
+    setState(() {
+      _future = FavoritesStore().listSeriesIds();
+    });
   }
 
   @override
