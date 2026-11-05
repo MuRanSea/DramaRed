@@ -6,16 +6,20 @@ import 'pages/favorites_page.dart';
 import 'pages/history_page.dart';
 import 'pages/home_page.dart';
 import 'pages/search_page.dart';
+import 'pages/smoke_page.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // media_kit must init before creating Player (Android/iOS/desktop).
   MediaKit.ensureInitialized();
-  runApp(const DramaRedApp());
+  final smoke = await resolveSmokeLaunch();
+  runApp(DramaRedApp(smoke: smoke));
 }
 
 class DramaRedApp extends StatelessWidget {
-  const DramaRedApp({super.key});
+  const DramaRedApp({super.key, this.smoke});
+
+  final SmokeLaunch? smoke;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +29,13 @@ class DramaRedApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
-      home: const RootShell(),
+      home: smoke == null
+          ? const RootShell()
+          : SmokePage(
+              initialQuery: smoke!.query,
+              observeSeconds: smoke!.seconds,
+              directUrl: smoke!.directUrl,
+            ),
     );
   }
 }
