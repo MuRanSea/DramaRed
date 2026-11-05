@@ -1,0 +1,76 @@
+=== Android e2e 20261105-155824 ===
+commit=976f0ce
+apk=/workspace/DramaRed/apps/android/build/app/outputs/flutter-apk/app-x86_64-debug.apk
+-rw-r--r-- 1 box box 111M Nov  5 15:58 /workspace/DramaRed/apps/android/build/app/outputs/flutter-apk/app-x86_64-debug.apk
+boot=1
+guest_ping:
+connect: Network is unreachable
+=== INSTALL ===
+Performing Streamed Install
+Success
+package:/data/app/~~TPFxIiiEesSrhIFQDlJWFA==/com.dramared.app-FgdSPKJP1jwHXtnc76AVaw==/base.apk
+=== LAUNCH NORMAL UI ===
+Starting: Intent { cmp=com.dramared.app/.MainActivity }
+  * Task{81437eb #15 type=standard I=com.dramared.app/.MainActivity U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+    * Hist  #0: ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+      packageName=com.dramared.app processName=com.dramared.app
+      Intent { flg=0x10000000 cmp=com.dramared.app/.MainActivity }
+      rootOfTask=true task=Task{81437eb #15 type=standard I=com.dramared.app/.MainActivity}
+      mActivityComponent=com.dramared.app/.MainActivity
+      baseDir=/data/app/~~TPFxIiiEesSrhIFQDlJWFA==/com.dramared.app-FgdSPKJP1jwHXtnc76AVaw==/base.apk
+      dataDir=/data/user/0/com.dramared.app
+      windows=[Window{bbe5d1d u0 Splash Screen com.dramared.app}]
+      startingWindow=Window{bbe5d1d u0 Splash Screen com.dramared.app} startingSurface=com.android.server.wm.StartingSurfaceController$StartingSurface@2ac6e47 startingDisplayed=false startingMoved=false mVisibleSetFromTransferredStartingWindow=false
+-rw-r--r-- 1 box box 57K Nov  5 16:00 /workspace/DramaRed/docs/smoke-artifacts/android-e2e-20261105-155824/ui-home.png
+ERROR: null root node returned by UiTestAutomationBridge.
+adb: error: failed to stat remote object '/sdcard/ui.xml': No such file or directory
+  mCurrentFocus=Window{39522b9 u0 Application Not Responding: com.google.android.apps.wellbeing}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{39522b9 u0 Application Not Responding: com.google.android.apps.wellbeing}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{39522b9 u0 Application Not Responding: com.google.android.apps.wellbeing}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{39522b9 u0 Application Not Responding: com.google.android.apps.wellbeing}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{39522b9 u0 Application Not Responding: com.google.android.apps.wellbeing}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{5cf261a u0 Application Not Responding: com.android.systemui}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{5cf261a u0 Application Not Responding: com.android.systemui}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{f6da612 u0 com.dramared.app/com.dramared.app.MainActivity}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{f6da612 u0 com.dramared.app/com.dramared.app.MainActivity}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+  mCurrentFocus=Window{f6da612 u0 com.dramared.app/com.dramared.app.MainActivity}
+  mFocusedApp=ActivityRecord{af57430 u0 com.dramared.app/.MainActivity t15}
+Performing Streamed Install
+Success
+Starting: Intent { cmp=com.dramared.app/.MainActivity (has extras) }
+LOCAL_SMOKE=TIMEOUT
+-rw-r--r-- 1 box box 52K Nov  5 16:07 /workspace/DramaRed/docs/smoke-artifacts/android-e2e-20261105-155824/ui-smoke.png
+10807
+  mCurrentFocus=Window{840cc7b u0 Application Not Responding: system}
+  mFocusedApp=ActivityRecord{b71bd87 u0 com.dramared.app/.MainActivity t16}
+Starting: Intent { cmp=com.dramared.app/.MainActivity (has extras) }
+LOCAL_SMOKE3=TIMEOUT
+11-05 16:22:02.220 I/flutter ( 2184): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(104)] Using the Impeller rendering backend (OpenGLES).
+11-05 16:22:20.169 I/media_kit( 2184): package:media_kit_libs_android_video attached.
+11-05 16:22:20.409 D/media_kit( 2184): google
+11-05 16:22:20.409 D/media_kit( 2184): emu64xa
+11-05 16:22:20.410 D/media_kit( 2184): google/sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043/12960925:userdebug/dev-keys
+11-05 16:22:20.413 D/media_kit( 2184): ranchu
+11-05 16:22:20.414 D/media_kit( 2184): sdk_gphone64_x86_64
+11-05 16:22:20.415 D/media_kit( 2184): Google
+11-05 16:22:20.416 D/media_kit( 2184): sdk_gphone64_x86_64
+11-05 16:22:20.421 I/media_kit( 2184): Saved application context.
+11-05 16:22:33.962 I/flutter ( 2184): media_kit: NativeReferenceHolder: Allocated 127864511783776
+11-05 16:22:55.005 F/libc    ( 2318): Fatal signal 6 (SIGABRT), code -1 (SI_QUEUE) in tid 2457 (bt_stack_manage), pid 2318 (droid.bluetooth)
+11-05 16:23:12.989 I/flutter ( 2184): [DramaRedSmoke] start observe=25s
+11-05 16:23:13.051 I/flutter ( 2184): [DramaRedSmoke] mode=direct_url url=file:///data/local/tmp/sample.mp4
+11-05 16:24:14.699 F/libc    ( 2780): Fatal signal 6 (SIGABRT), code -1 (SI_QUEUE) in tid 2886 (bt_stack_manage), pid 2780 (droid.bluetooth)
+11-05 16:27:18.523 I/AndroidRuntime( 3449): VM exiting with result code 0, cleanup skipped.
+11-05 16:27:49.179 I/AndroidRuntime( 3814): VM exiting with result code 0, cleanup skipped.
+11-05 16:29:06.136 I/AndroidRuntime( 3931): VM exiting with result code 0, cleanup skipped.
+11-05 16:30:00.759 I/AndroidRuntime( 4438): VM exiting with result code 0, cleanup skipped.
+4743
