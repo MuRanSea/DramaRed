@@ -1,25 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
-/// 播放页占位：清晰度、倍速、自动连播、定时停止 UI 壳。
-/// 实际解码交给 media_kit；ClearKey / 后台继续听仅预留。
+import '../services/history_store.dart';
+import '../services/ohg_client.dart';
+import '../services/player_controller.dart';
+
 class PlayerPage extends StatefulWidget {
   const PlayerPage({
     super.key,
     required this.title,
     required this.episodeId,
+    this.seriesId = '',
   });
 
   final String title;
   final String episodeId;
+  final String seriesId;
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
 }
 
 class _PlayerPageState extends State<PlayerPage> {
+  late final PlayerController _controller;
+  late final VideoController _video;
   String _definition = '自动';
   double _speed = 1.0;
   bool _autoNext = true;
+  String _status = '解析播放地址…';
+  List<String> _definitions = const ['自动'];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PlayerController();
+    _video = VideoController(_controller.player);
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (widget.episodeId.isEmpty) {
+      setState(() => _status = '缺少 episodeId');
+      return;
+    }
+    try {
+      final client = await OhgClient.instance();
+      final result = await client.resolvePlayback(widget.episodeId);
+      final defs = result.playback.streams
+          .where((s) => s.url.isNotEmpty)
+          .map((s) => s.definition.isEmpty ? s.quality : s.definition)
+          .where((d) => d.isNotEmpty)
+          .toSet()
+          .toList();
+      setState(() {
+        _definitions = ['自动', ...defs];
+        _status = result.playback.protected
+            ? '受保护流（尝试 ClearKey/decryption_key）'
+            : '开始播放';
+      });
+      await _controller.openPlayback(result, preferDefinition: _definition);
+      await HistoryStore().upsert(
+        HistoryEntry(
+          seriesId: widget.seriesId,
+          episodeId: widget.episodeId,
+          title: widget.title,
+          positionMs: 0,
+          updatedAt: DateTime.now().toUtc(),
+        ),
+      );
+    } catch (e) {
+      setState(() => _status = '播放失败：$e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,23 +89,23 @@ class _PlayerPageState extends State<PlayerPage> {
           AspectRatio(
             aspectRatio: 16 / 9,
             child: Container(
-              color: Colors.black12,
-              alignment: Alignment.center,
-              child: const Text('media_kit 视频区占位'),
+              color: Colors.black,
+              child: Video(controller: _video),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          Text(_status),
           ListTile(
             title: const Text('清晰度'),
             trailing: DropdownButton<String>(
-              value: _definition,
-              items: const [
-                DropdownMenuItem(value: '自动', child: Text('自动')),
-                DropdownMenuItem(value: '1080P', child: Text('1080P')),
-                DropdownMenuItem(value: '720P', child: Text('720P')),
-                DropdownMenuItem(value: '540P', child: Text('540P')),
-              ],
-              onChanged: (v) => setState(() => _definition = v ?? '自动'),
+              value: _definitions.contains(_definition) ? _definition : '自动',
+              items: _definitions
+                  .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                  .toList(),
+              onChanged: (v) async {
+                setState(() => _definition = v ?? '自动');
+                await _load();
+              },
             ),
           ),
           ListTile(
@@ -61,7 +119,11 @@ class _PlayerPageState extends State<PlayerPage> {
                 DropdownMenuItem(value: 1.5, child: Text('1.5x')),
                 DropdownMenuItem(value: 2.0, child: Text('2.0x')),
               ],
-              onChanged: (v) => setState(() => _speed = v ?? 1.0),
+              onChanged: (v) async {
+                final rate = v ?? 1.0;
+                setState(() => _speed = rate);
+                await _controller.setRate(rate);
+              },
             ),
           ),
           SwitchListTile(
@@ -71,13 +133,12 @@ class _PlayerPageState extends State<PlayerPage> {
           ),
           const ListTile(
             title: Text('定时停止'),
-            subtitle: Text('TODO: 定时器占位'),
+            subtitle: Text('UI 预留；未实现计时器'),
           ),
           const ListTile(
             title: Text('后台 / 隐藏继续听'),
-            subtitle: Text('TODO: 音频会话 / media_kit 后台预留'),
+            subtitle: Text('预留：音频会话 / media_kit 后台'),
           ),
-          Text('episodeId: ${widget.episodeId.isEmpty ? "(empty)" : widget.episodeId}'),
         ],
       ),
     );

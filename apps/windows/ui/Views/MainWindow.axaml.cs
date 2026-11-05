@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using DramaRed.UI.Services;
@@ -16,10 +17,31 @@ public partial class MainWindow : Window
     private async void OnSearch(object? sender, RoutedEventArgs e)
     {
         var q = SearchBox.Text ?? "";
-        SearchHint.Text = string.IsNullOrWhiteSpace(q)
-            ? "请输入关键词"
-            : $"TODO: 搜索 «{q}» → {_daemon.BaseAddress}api/v1/search";
-        // var results = await _daemon.SearchAsync(q);
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            SearchHint.Text = "请输入关键词";
+            return;
+        }
+        SearchHint.Text = "搜索中…";
+        try
+        {
+            var page = await _daemon.SearchAsync(q);
+            if (page is null)
+            {
+                SearchHint.Text = "空响应";
+                return;
+            }
+            var count = 0;
+            if (page.Value.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+            {
+                count = items.GetArrayLength();
+            }
+            SearchHint.Text = $"OK：约 {count} 条（原始 JSON 长度 {page.Value.GetRawText().Length}）";
+        }
+        catch (Exception ex)
+        {
+            SearchHint.Text = $"失败：{ex.Message}（先启动 daemon）";
+        }
     }
 
     private void OnExit(object? sender, RoutedEventArgs e) => Close();

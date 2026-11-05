@@ -95,3 +95,10 @@
 - 仅绑定 localhost；不要把 daemon 暴露到公网。
 - 遵守 openhongguo 免责声明：学习研究、禁止商业、内容版权归原权利人。
 - 不做下载、不做批量爬取。
+
+
+## 播放密钥（受保护流）
+
+- Flutter：`resolvePlayback` 返回 `PlaybackResult.contentKey`（SDK 已推导）。
+- Windows daemon：`/api/v1/episodes/{id}/playback` 在 `ErrDRMProtected` 时附加 `contentKey`（`sdk.ContentKey`）。
+- 播放器侧：media_kit / libmpv 目前以 `demuxer-lavf-o=decryption_key=<hex>` 作 best-effort；完整 CENC ClearKey 仍可能需后续平台适配。

@@ -1,13 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
-import 'pages/search_page.dart';
-import 'pages/player_page.dart';
+import 'package:media_kit/media_kit.dart';
+
 import 'pages/favorites_page.dart';
 import 'pages/history_page.dart';
+import 'pages/home_page.dart';
+import 'pages/search_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // media_kit 初始化与后台听 / ClearKey 留待后续接入。
+  // media_kit must init before creating Player (Android/iOS/desktop).
+  MediaKit.ensureInitialized();
   runApp(const DramaRedApp());
 }
 
@@ -46,8 +49,26 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
     return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
+      body: Column(
+        children: [
+          if (!isMobile)
+            MaterialBanner(
+              content: const Text(
+                'openhongguo 仅支持 Android/iOS。当前平台可浏览 UI，业务 API 会失败。',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {},
+                  child: const Text('知道了'),
+                ),
+              ],
+            ),
+          Expanded(child: IndexedStack(index: _index, children: _pages)),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
@@ -57,20 +78,6 @@ class _RootShellState extends State<RootShell> {
           NavigationDestination(icon: Icon(Icons.favorite_border), label: '收藏'),
           NavigationDestination(icon: Icon(Icons.history), label: '历史'),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const PlayerPage(
-                title: '播放器占位',
-                episodeId: '',
-              ),
-            ),
-          );
-        },
-        icon: const Icon(Icons.play_arrow),
-        label: const Text('播放器'),
       ),
     );
   }

@@ -108,7 +108,11 @@ func (s *Server) playback(w http.ResponseWriter, r *http.Request) {
 		out["warning"] = err.Error()
 		if errors.Is(err, sdk.ErrDRMProtected) {
 			out["drmProtected"] = true
-			// ClearKey material stays in playback; UI/player derives key via sdk.ContentKey later.
+			if key, keyErr := sdk.ContentKey(pb); keyErr == nil {
+				out["contentKey"] = key
+			} else {
+				out["contentKeyError"] = keyErr.Error()
+			}
 		}
 	}
 	writeJSON(w, http.StatusOK, out)

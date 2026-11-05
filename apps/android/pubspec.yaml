@@ -10,8 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  # Locked per project decision
-  openhongguo: 0.2.0
+  # Locked to openhongguo 0.2.0 API; path pins a Gradle-patched vendored copy
+  # (upstream pub android/build.gradle.kts misses kotlin android plugin).
+  openhongguo:
+    path: packages/openhongguo
   # Player stack; ClearKey / background audio reserved for later
   media_kit: ^1.1.11
   media_kit_video: ^1.2.5

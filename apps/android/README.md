@@ -2,38 +2,51 @@
 
 ## 依赖
 
-- Flutter stable（建议 3.24+）
-- Android SDK / emulator 或真机（API 24+，openhongguo 要求）
+- Flutter stable 3.35+ / Dart 3.9+
+- Android SDK（API 24+；openhongguo 要求）
+- JDK 17
 - `openhongguo: 0.2.0`（锁定）
-- `media_kit` 系列（播放占位；ClearKey / 后台听未实现）
+- `media_kit` + `media_kit_video` + `media_kit_libs_android_video`
 
-## 运行
+## 在本仓库 box 上已验证
 
 ```sh
-flutter pub get
-flutter run
+flutter pub get   # OK
+flutter analyze   # No issues
 ```
 
-若本环境未安装 Flutter，请在开发机安装后于本目录执行上述命令。
+`openhongguo` **不支持** Web / Linux desktop；业务 API 只能在 **Android/iOS** 真机或模拟器上跑通。
+
+## 有设备时如何验证播放
+
+1. 连接设备或启动模拟器：`flutter devices`
+2. `cd apps/android && flutter run`
+3. 流程：搜索 → 点进剧 → 选集 → `resolvePlayback` → media_kit 打开流
+4. 受保护流会尝试 `demuxer-lavf-o=decryption_key=<hex>`（ClearKey 完整方案仍可能需后续加固）
 
 ## 页面
 
-| 路由 | 文件 | 状态 |
-|---|---|---|
-| Home | `lib/pages/home_page.dart` | 占位（书城/推荐入口） |
-| Search | `lib/pages/search_page.dart` | 占位 |
-| Player | `lib/pages/player_page.dart` | 占位（清晰度/倍速/连播 UI 壳） |
-| Favorites | `lib/pages/favorites_page.dart` | 占位 |
-| History | `lib/pages/history_page.dart` | 占位 |
+| 路由 | 说明 |
+|---|---|
+| Home | `discover()` 书城推荐 |
+| Search | `search(q)` |
+| Series | `listEpisodes` + 收藏 |
+| Player | `resolvePlayback` + media_kit（清晰度/倍速 UI） |
+| Favorites / History | SharedPreferences 本地存储 |
 
-## 关于手写骨架
+## 工程说明
 
-本目录为在无 Flutter SDK 环境下手写的可识别骨架（含 `pubspec.yaml`、页面与 Android embedding 占位）。
-在已安装 Flutter 的机器上，建议于本目录执行一次：
+已用 `flutter create --platforms=android` 对齐官方工程；`minSdk=24`，`applicationId=com.dramared.app`。
+
+## openhongguo 依赖
+
+因 pub 上 `openhongguo` 0.2.0 的 `android/build.gradle.kts` 未 apply Kotlin Android 插件导致
+`flutter build apk` 失败，本仓库将 **API 锁定的 0.2.0** 以 path 形式 vendored 到
+`packages/openhongguo`（见其中 `PATCHES.md`）。
+
+## 构建结果（box）
 
 ```sh
-flutter create --project-name dramared --org com.dramared --platforms=android .
-flutter pub get
+flutter build apk --debug
+# → build/app/outputs/flutter-apk/app-debug.apk （勿提交）
 ```
-
-以补齐 `ios/`（若需要）、gradle wrapper、图标等官方生成文件；注意保留现有 `lib/` 与锁定的 `openhongguo: 0.2.0`。

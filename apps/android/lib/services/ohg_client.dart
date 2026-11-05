@@ -1,40 +1,33 @@
-// openhongguo 封装占位。真实调用需在 Android/iOS 设备或模拟器上，
-// 且已 flutter pub get 拉取 openhongguo 0.2.0 原生库。
-//
-// import 'package:openhongguo/openhongguo.dart';
+import 'package:openhongguo/openhongguo.dart';
 
-/// 对 OpenhongguoClient 的薄封装，便于测试替换。
+/// Thin wrapper around [OpenhongguoClient] (locked openhongguo 0.2.0).
+/// Native channel only works on Android/iOS — not web/desktop.
 class OhgClient {
-  OhgClient._();
+  OhgClient._(this._native);
+
+  final OpenhongguoClient _native;
 
   static OhgClient? _instance;
 
-  static Future<OhgClient> create() async {
-    // TODO: final native = await OpenhongguoClient.create();
-    return _instance ??= OhgClient._();
+  static Future<OhgClient> instance() async {
+    if (_instance != null) return _instance!;
+    final native = await OpenhongguoClient.create();
+    return _instance ??= OhgClient._(native);
   }
 
-  Future<void> discover() async {
-    // TODO: native.discover(...)
-    throw UnimplementedError('OhgClient.discover');
-  }
+  Future<PagedResult<SeriesSummary>> discover() => _native.discover();
 
-  Future<void> search(String query) async {
-    // TODO: native.search(query)
-    throw UnimplementedError('OhgClient.search');
-  }
+  Future<PagedResult<SeriesSummary>> search(String query) =>
+      _native.search(query);
 
-  Future<void> listEpisodes(String seriesId) async {
-    // TODO: native.listEpisodes(seriesId)
-    throw UnimplementedError('OhgClient.listEpisodes');
-  }
+  Future<PagedResult<Episode>> listEpisodes(String seriesId) =>
+      _native.listEpisodes(seriesId);
 
-  Future<void> resolvePlayback(String episodeId) async {
-    // TODO: native.resolvePlayback(episodeId)
-    throw UnimplementedError('OhgClient.resolvePlayback');
-  }
+  Future<PlaybackResult> resolvePlayback(String episodeId) =>
+      _native.resolvePlayback(episodeId);
 
   Future<void> release() async {
-    // TODO: native.release()
+    await _native.release();
+    _instance = null;
   }
 }

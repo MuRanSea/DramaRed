@@ -41,3 +41,10 @@ apps/windows/daemon/anonymous.json
 **/anonymous.json
 .env
 *.log
+
+# Flutter / Android build products
+**/build/
+**/.gradle/
+**/app-debug.apk
+**/app-release.apk
+apps/android/android/local.properties

@@ -1,14 +1,58 @@
-/// media_kit 播放控制占位。
-/// 预留：ClearKey、后台音频、倍速、自动连播、定时停止。
+import 'package:media_kit/media_kit.dart';
+import 'package:openhongguo/openhongguo.dart';
+
+/// media_kit playback helper. ClearKey / decryption_key is best-effort.
 class PlayerController {
-  Future<void> open(Uri url, {String? clearKey}) async {
-    // TODO: Player() + Media(url) ；若有 clearKey 再配 DRM/ClearKey
-    throw UnimplementedError('PlayerController.open');
+  PlayerController() : player = Player();
+
+  final Player player;
+
+  /// Pick a stream preferring higher resolution; fall back to first with URL.
+  static VideoStream? pickStream(Playback playback, {String? preferDefinition}) {
+    final streams = playback.streams.where((s) => s.url.isNotEmpty).toList();
+    if (streams.isEmpty) return null;
+    if (preferDefinition != null && preferDefinition != '自动') {
+      for (final s in streams) {
+        final label = s.definition.isEmpty ? s.quality : s.definition;
+        if (label.toUpperCase().contains(preferDefinition.toUpperCase())) {
+          return s;
+        }
+      }
+    }
+    streams.sort((a, b) => b.height.compareTo(a.height));
+    return streams.first;
   }
 
-  Future<void> setRate(double rate) async {}
+  Future<void> openPlayback(
+    PlaybackResult result, {
+    String? preferDefinition,
+  }) async {
+    final stream = pickStream(result.playback, preferDefinition: preferDefinition);
+    if (stream == null) {
+      throw StateError('no playable stream URL in playback model');
+    }
 
-  Future<void> stop() async {}
+    final key = result.contentKey?.key;
+    if (key != null && key.isNotEmpty) {
+      // Best-effort for cenc-aes-ctr via libmpv/ffmpeg lavf decryption_key.
+      final platform = player.platform;
+      if (platform is NativePlayer) {
+        try {
+          await platform.setProperty('demuxer-lavf-o', 'decryption_key=$key');
+        } catch (_) {
+          // May be unsupported depending on backend build.
+        }
+      }
+    }
 
-  Future<void> dispose() async {}
+    await player.open(Media(stream.url));
+  }
+
+  Future<void> setRate(double rate) => player.setRate(rate);
+
+  Future<void> stop() => player.stop();
+
+  Future<void> dispose() async {
+    await player.dispose();
+  }
 }
