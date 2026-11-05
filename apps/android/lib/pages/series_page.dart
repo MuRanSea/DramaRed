@@ -56,7 +56,28 @@ class _SeriesPageState extends State<SeriesPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(child: Text('分集加载失败：${snap.error}'));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('分集加载失败：${snap.error}', textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _future = OhgClient.instance()
+                              .then((c) => c.listEpisodes(widget.series.id));
+                        });
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('重试'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           final items = snap.data?.items ?? const <Episode>[];
           if (items.isEmpty) {

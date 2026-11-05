@@ -20,7 +20,9 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void _reload() {
-    setState(() => _future = HistoryStore().list());
+    setState(() {
+      _future = HistoryStore().list();
+    });
   }
 
   @override

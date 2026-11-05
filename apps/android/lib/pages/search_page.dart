@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:openhongguo/openhongguo.dart';
 
 import '../services/ohg_client.dart';
-import 'series_page.dart';
+import '../widgets/series_tile.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -14,13 +14,11 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final _controller = TextEditingController();
   Future<PagedResult<SeriesSummary>>? _future;
-  String? _error;
 
   Future<void> _run(String q) async {
     final query = q.trim();
     if (query.isEmpty) return;
     setState(() {
-      _error = null;
       _future = OhgClient.instance().then((c) => c.search(query));
     });
   }
@@ -54,7 +52,6 @@ class _SearchPageState extends State<SearchPage> {
               onSubmitted: _run,
             ),
           ),
-          if (_error != null) Text(_error!),
           Expanded(
             child: _future == null
                 ? const Center(child: Text('输入关键词搜索'))
@@ -65,28 +62,28 @@ class _SearchPageState extends State<SearchPage> {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (snap.hasError) {
-                        return Center(child: Text('搜索失败：${snap.error}'));
+                        return Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('搜索失败：${snap.error}', textAlign: TextAlign.center),
+                              const SizedBox(height: 12),
+                              FilledButton(
+                                onPressed: () => _run(_controller.text),
+                                child: const Text('重试'),
+                              ),
+                            ],
+                          ),
+                        );
                       }
                       final items = snap.data?.items ?? const <SeriesSummary>[];
                       if (items.isEmpty) {
                         return const Center(child: Text('无结果'));
                       }
-                      return ListView.builder(
+                      return ListView.separated(
                         itemCount: items.length,
-                        itemBuilder: (context, i) {
-                          final s = items[i];
-                          return ListTile(
-                            title: Text(s.title),
-                            subtitle: Text(s.description, maxLines: 2, overflow: TextOverflow.ellipsis),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => SeriesPage(series: s),
-                                ),
-                              );
-                            },
-                          );
-                        },
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, i) => SeriesTile(series: items[i]),
                       );
                     },
                   ),
