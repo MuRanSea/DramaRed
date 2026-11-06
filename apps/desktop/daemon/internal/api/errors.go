@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -11,7 +12,7 @@ import (
 // classifyUpstream maps openhongguo / transport failures to an HTTP status and
 // a user-facing Chinese message. Historically every ohg error was returned as
 // 502 Bad Gateway, which made ErrAnonymousLimited (empty recommend tab) look
- // like a CDN/gateway outage even though Search still worked.
+// like a CDN/gateway outage even though Search still worked.
 func classifyUpstream(err error) (status int, message string) {
 	if err == nil {
 		return http.StatusInternalServerError, "未知错误"
@@ -20,6 +21,10 @@ func classifyUpstream(err error) (status int, message string) {
 	low := strings.ToLower(raw)
 
 	switch {
+	case errors.Is(err, context.DeadlineExceeded) || strings.Contains(low, "deadline exceeded"):
+		return http.StatusGatewayTimeout, "推荐加载超时，可点重试或用顶栏搜索"
+	case errors.Is(err, context.Canceled):
+		return http.StatusGatewayTimeout, "推荐加载已取消，可点重试"
 	case errors.Is(err, sdk.ErrAnonymousLimited) || strings.Contains(low, "anonymous response was empty"):
 		return http.StatusServiceUnavailable, "推荐接口暂时没有返回内容（匿名设备空页）。可点重试，或先用搜索找剧"
 	case errors.Is(err, sdk.ErrRateLimited) || strings.Contains(low, "429"):

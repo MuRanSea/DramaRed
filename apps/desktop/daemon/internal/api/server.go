@@ -1,10 +1,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/beilunyang/openhongguo/sdk"
 
@@ -76,7 +78,9 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "missing q")
 		return
 	}
-	page, err := s.ohg.Search(r.Context(), q)
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+	defer cancel()
+	page, err := s.ohg.Search(ctx, q)
 	if err != nil {
 		writeUpstreamErr(w, err)
 		return
@@ -85,7 +89,9 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) discover(w http.ResponseWriter, r *http.Request) {
-	page, err := s.ohg.Discover(r.Context())
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+	defer cancel()
+	page, err := s.ohg.Discover(ctx)
 	if err != nil {
 		writeUpstreamErr(w, err)
 		return

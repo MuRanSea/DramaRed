@@ -16,6 +16,8 @@ public sealed class FakeDaemonServer : IAsyncDisposable
     public int DiscoverCalls => _discoverCalls;
     public bool FailDiscover { get; set; }
     public string FailDiscoverMessage { get; set; } = "上游短剧服务暂时不可用（网关错误），请稍后重试";
+    /// <summary>Artificial delay before answering /api/v1/discover (tests timeout UX).</summary>
+    public int DiscoverDelayMs { get; set; }
 
     public FakeDaemonServer()
     {
@@ -72,6 +74,10 @@ public sealed class FakeDaemonServer : IAsyncDisposable
             if (path == "/api/v1/discover")
             {
                 Interlocked.Increment(ref _discoverCalls);
+                if (DiscoverDelayMs > 0)
+                {
+                    Thread.Sleep(DiscoverDelayMs);
+                }
                 if (FailDiscover)
                 {
                     WriteJson(ctx, 502, new { error = "bad gateway", message = FailDiscoverMessage });

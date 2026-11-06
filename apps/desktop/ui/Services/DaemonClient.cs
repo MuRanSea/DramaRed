@@ -18,7 +18,7 @@ public sealed class DaemonClient : IDisposable
     public DaemonClient(string baseAddress = "http://127.0.0.1:17890/")
     {
         BaseAddress = baseAddress;
-        _http = new HttpClient { BaseAddress = new Uri(baseAddress), Timeout = TimeSpan.FromSeconds(90) };
+        _http = new HttpClient { BaseAddress = new Uri(baseAddress), Timeout = TimeSpan.FromSeconds(35) };
     }
 
     public string BaseAddress { get; }
@@ -37,10 +37,25 @@ public sealed class DaemonClient : IDisposable
     }
 
     public Task<PageResult<SeriesSummary>?> SearchAsync(string query, CancellationToken ct = default) =>
-        GetAsync<PageResult<SeriesSummary>>($"api/v1/search?q={Uri.EscapeDataString(query)}", "搜索", ct);
+        GetCatalogAsync<PageResult<SeriesSummary>>($"api/v1/search?q={Uri.EscapeDataString(query)}", "搜索", ct);
 
     public Task<PageResult<SeriesSummary>?> DiscoverAsync(CancellationToken ct = default) =>
-        GetAsync<PageResult<SeriesSummary>>("api/v1/discover", "推荐", ct);
+        GetCatalogAsync<PageResult<SeriesSummary>>("api/v1/discover", "推荐", ct);
+
+    /// <summary>Catalog calls use a shorter linked timeout + fewer retries so the UI cannot sit on 「正在加载」 for minutes.</summary>
+    private async Task<T?> GetCatalogAsync<T>(string path, string op, CancellationToken ct)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        linked.CancelAfter(TimeSpan.FromSeconds(30));
+        try
+        {
+            return await GetAsync<T>(path, op, linked.Token, retries: 2);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new DaemonApiException($"{op}失败：加载超时，可点重试或用顶栏搜索");
+        }
+    }
 
     public Task<PageResult<EpisodeItem>?> EpisodesAsync(string seriesId, CancellationToken ct = default) =>
         GetAsync<PageResult<EpisodeItem>>($"api/v1/series/{Uri.EscapeDataString(seriesId)}/episodes", "分集", ct);
@@ -97,6 +112,10 @@ public sealed class DaemonClient : IDisposable
 
                 await EnsureOkAsync(resp, op, ct);
                 return await resp.Content.ReadFromJsonAsync<T>(JsonOpts, ct);
+            }
+            catch (OperationCanceledException oce) when (!ct.IsCancellationRequested)
+            {
+                throw new DaemonApiException($"{op}失败：请求超时，可点重试或用顶栏搜索", oce);
             }
             catch (OperationCanceledException) { throw; }
             catch (DaemonApiException)

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -40,6 +41,16 @@ func TestClassifyUpstream_wrappedAnonymous(t *testing.T) {
 	}
 	if status == http.StatusServiceUnavailable && contains(msg, "网关") {
 		t.Fatalf("should not say 网关 for anonymous empty: %q", msg)
+	}
+}
+
+func TestClassifyUpstream_deadlineExceeded(t *testing.T) {
+	status, msg := classifyUpstream(context.DeadlineExceeded)
+	if status != http.StatusGatewayTimeout {
+		t.Fatalf("status=%d want 504", status)
+	}
+	if !contains(msg, "超时") {
+		t.Fatalf("message=%q", msg)
 	}
 }
 
