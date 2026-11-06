@@ -80,3 +80,26 @@
 - **合 PR（desktop fix）: OK** — CRITICAL/HIGH 截图已过；导航卡死残差有根因修复+回归单测，无 Release。
 - **发版 / 给用户 zip: NOT OK** — 用户明确不要发版本；隐藏唤回与 SDK 搜索、安卓仍未完。
 - **下一步（非本提交）:** 用本分支再跑一轮 GUI（收藏→历史→侧栏连点）确认卡死不再复现；另跟隐藏唤回与安卓。
+
+---
+
+## Android（audit B 组 + ClearKey/封面修复）
+
+对照：红果竖滑首页、剧场九宫格真封面、播控无 DRM 黑话。证据：`android/B01`–`B06`；说明见 `android/NOTES.md`。
+
+| id | 修前截图结论 | 证据 | 本 PR 代码 | 合入后仍欠 |
+|---|---|---|---|---|
+| B01 首页竖滑推荐 | **过**（沉浸单列+真封面） | B01 | 无改 | — |
+| B02 上滑下一推 | **过** | B02 | 无改 | — |
+| B03 剧场九宫格 | **不过** — 标题有、封面全灰占位 | B03 | HEIC→PNG MethodChannel + CoverImage | 需重装 APK 复拍；API&lt;28 / 无 HEIF 编解码仍可能灰（NOTES） |
+| B04 搜索空态 | 有帧 | B04 | 无改 | — |
+| B05 搜索结果 | 有帧 | B05 | 无改 | — |
+| B06 播放器 | **不过** — 黑屏 + `受保护流 (尝试 ClearKey/decryption_key)` | B06 | silent ClearKey UX；友好失败文案 | 需重装后确认 jargon 消失；真解密失败仍可能黑屏但文案友好 |
+
+### Android verdict（相对成熟短剧 App）
+
+- **修前（B06/B03）不通过 PR-ok 门禁**：播放器甩 ClearKey 技术串；剧场封面不可用。
+- **本 PR 代码**：ClearKey **silent**（对齐 PR #25 意图并去掉残留「解密」话术）；剧场 HEIC 走系统 BitmapFactory（API 28+）。
+- **仍不宣称可发版 / 不发 Release**：缺修后安卓复拍；解密失败黑屏、低 API HEIC 仍为 Known。
+
+**未发 GitHub Release / 未出 zip。**

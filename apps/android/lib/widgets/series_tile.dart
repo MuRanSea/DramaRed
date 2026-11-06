@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:openhongguo/openhongguo.dart';
 
 import '../navigation/play_nav.dart';
+import 'cover_image.dart';
 
 /// Shared row with cover thumb; tap opens the immersive player.
 class SeriesTile extends StatelessWidget {
@@ -16,27 +17,14 @@ class SeriesTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cover = series.coverUrl.trim();
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: SizedBox(
-          width: 56,
-          height: 74,
-          child: cover.isEmpty
-              ? ColoredBox(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.movie_outlined),
-                )
-              : Image.network(
-                  cover,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => ColoredBox(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: const Icon(Icons.broken_image_outlined),
-                  ),
-                ),
+      leading: SizedBox(
+        width: 56,
+        height: 74,
+        child: CoverImage(
+          url: series.coverUrl,
+          borderRadius: BorderRadius.circular(6),
         ),
       ),
       title: Text(series.title, maxLines: 1, overflow: TextOverflow.ellipsis),

@@ -13,6 +13,7 @@ import '../services/playback_settings_store.dart';
 import '../services/player_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/episode_swipe_shell.dart';
+import '../widgets/status_pane.dart';
 
 class PlayerPage extends StatefulWidget {
   const PlayerPage({
@@ -55,6 +56,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   Timer? _stopTicker;
   StreamSubscription? _completedSub;
   StreamSubscription? _playingSub;
+  StreamSubscription? _errorSub;
   bool _advancing = false;
   Timer? _progressTicker;
   List<Episode> _episodes = const [];
@@ -98,12 +100,24 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
   void _bindPlayerStreams() {
     _completedSub?.cancel();
     _playingSub?.cancel();
+    _errorSub?.cancel();
     _completedSub = _controller.player.stream.completed.listen((done) {
       if (done) unawaited(_onCompleted());
     });
     _playingSub = _controller.player.stream.playing.listen((playing) {
-      if (mounted) setState(() => _playing = playing);
+      if (mounted) {
+        setState(() {
+          _playing = playing;
+          if (playing) _status = '播放中';
+        });
+      }
       unawaited(_syncWakelock(playing));
+    });
+    // Never surface ClearKey / demuxer jargon from the engine.
+    _errorSub = _controller.player.stream.error.listen((err) {
+      if (!mounted || err.trim().isEmpty) return;
+      debugPrint('[DramaRedPlayer] engine_error=$err');
+      setState(() => _status = StatusPane.playFailedFriendly);
     });
   }
 
@@ -270,12 +284,15 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
         .toSet()
         .toList();
     _definitions = ['自动', ...defs];
+    // Silent ClearKey UX (PR #25 / audit B06): keep decrypting internally;
+    // never show 「受保护流」「ClearKey」「decryption_key」 or 「解密」 jargon.
     final hasKey = result.contentKey?.key.isNotEmpty == true;
-    if (result.playback.protected && !hasKey) {
-      _status = '此集受保护，暂无法解密';
-    } else {
-      _status = '播放中';
+    if (result.playback.protected) {
+      debugPrint(
+        '[DramaRedPlayer] protected=${result.playback.protected} hasKey=$hasKey (silent)',
+      );
     }
+    _status = '缓冲中…';
   }
 
   Future<void> _prefetchNext() async {
@@ -352,7 +369,10 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
       );
       unawaited(_prefetchNext());
     } catch (e) {
-      if (mounted) setState(() => _status = '播放失败：$e');
+      debugPrint('[DramaRedPlayer] load_failed=$e');
+      if (mounted) {
+        setState(() => _status = StatusPane.friendlyPlaybackStatus('播放失败：$e'));
+      }
     }
   }
 
@@ -542,6 +562,7 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
     _progressTicker?.cancel();
     _completedSub?.cancel();
     _playingSub?.cancel();
+    _errorSub?.cancel();
     _epPageController.dispose();
     unawaited(_persistProgress());
     unawaited(WakelockPlus.disable());

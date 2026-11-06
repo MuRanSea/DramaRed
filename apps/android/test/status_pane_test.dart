@@ -15,4 +15,25 @@ void main() {
     expect(out.length, lessThanOrEqualTo(100));
     expect(out.endsWith('…'), isTrue);
   });
+
+  test('friendlyError and friendlyPlaybackStatus scrub ClearKey / DRM jargon', () {
+    expect(
+      StatusPane.friendlyError('受保护流 (尝试 ClearKey/decryption_key)'),
+      StatusPane.playFailedFriendly,
+    );
+    expect(
+      StatusPane.friendlyError('demuxer failed decryption_key missing'),
+      StatusPane.playFailedFriendly,
+    );
+    expect(
+      StatusPane.friendlyPlaybackStatus('此集受保护，暂无法解密'),
+      StatusPane.playFailedFriendly,
+    );
+    expect(
+      StatusPane.friendlyPlaybackStatus('播放失败：ClearKey setup'),
+      StatusPane.playFailedFriendly,
+    );
+    expect(StatusPane.friendlyPlaybackStatus('缓冲中…'), '缓冲中…');
+  });
+
 }

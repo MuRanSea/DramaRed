@@ -49,3 +49,13 @@ Branch work against desktop bugs found while capturing `feature-audit-20261106` 
 - **Cause:** (1) `SelectNavSilently` mutated `NavList.SelectedItem` inside `SelectionChanged` with no suppress flag — Avalonia ListBox reentrancy left input routing wedged after HistoryList focus. (2) `PlayEpisodeAsync` / fav toggle **awaited** `RefreshHistoryAsync`/`RefreshFavoritesAsync` → `EnrichSeriesAsync` (network) on the UI async path. (3) `_progressTimer` still used `async void` Tick (same class of Avalonia freeze as the old 定时停 timer). (4) `ShowPage` did not refresh library pages; when refresh was added/hit, it must never block clicks.
 - **Fix:** `_navSync` guard around silent selection; `ShowPage(history|favorites)` fire-and-forget refresh only; play/fav paths no longer await library refresh; progress timer Tick is sync + `_ = PersistProgressAsync()`; CoverLoader drains ffmpeg stdout/stderr to avoid pipe deadlock. Regression: `ShowPage_history_favorites_does_not_await_network`.
 
+## Android (same PR #29 branch)
+
+### 10. Player ClearKey / 「受保护流」jargon (B06)
+- **Bug:** Status showed `受保护流 (尝试 ClearKey/decryption_key)` (pre–#25 APK) / residual 「此集受保护，暂无法解密」.
+- **Fix:** Silent protected-stream UX — internal `decryption_key` only; UI `缓冲中…`/`播放中`/`暂时无法播放，请换一集或稍后重试`. Scrub in `StatusPane.friendlyPlaybackStatus`.
+
+### 11. Theater grey HEIC covers (B03)
+- **Bug:** Grid titles load; covers all grey placeholders. OHG covers are signed `.heic`.
+- **Fix:** `MainActivity` `decodeToPng` (BitmapFactory, API 28+) + `CoverImage` HEIC path. Document API&lt;28 / missing HEIF as env limit in `android/NOTES.md`.
+
