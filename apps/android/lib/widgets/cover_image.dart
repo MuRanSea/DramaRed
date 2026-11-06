@@ -171,6 +171,8 @@ class _HeicCoverState extends State<_HeicCover> {
       width: double.infinity,
       height: double.infinity,
       gaplessPlayback: true,
+      errorBuilder: (_, __, ___) =>
+          const _CoverPlaceholder(icon: Icons.broken_image_outlined),
     );
   }
 }
