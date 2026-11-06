@@ -89,6 +89,7 @@ func (c *Client) Search(ctx context.Context, q string) (*sdk.Page[model.SeriesSu
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		page, err := c.inner.Search(ctx, q, sdk.SearchOptions{})
 		if err == nil {
+			c.enrichSearchCovers(ctx, page)
 			return page, nil
 		}
 		last = err
@@ -100,6 +101,56 @@ func (c *Client) Search(ctx context.Context, q string) (*sdk.Page[model.SeriesSu
 		}
 	}
 	return nil, fmt.Errorf("search: %w", last)
+}
+
+// enrichSearchCovers fills CoverURL via GetSeriesBatch.
+// openhongguo ParseSearch drops series_cover on the common series_title path,
+// so /api/v1/search often returned titles with empty cover_url.
+func (c *Client) enrichSearchCovers(ctx context.Context, page *sdk.Page[model.SeriesSummary]) {
+	if c.inner == nil || page == nil || len(page.Items) == 0 {
+		return
+	}
+	need := make([]string, 0, len(page.Items))
+	for _, it := range page.Items {
+		if it.CoverURL == "" && it.ID != "" {
+			need = append(need, it.ID)
+		}
+	}
+	if len(need) == 0 {
+		return
+	}
+	// Cap to keep search snappy on soft networks.
+	if len(need) > 12 {
+		need = need[:12]
+	}
+	details, err := c.inner.GetSeriesBatch(ctx, need)
+	if err != nil {
+		log.Printf("ohg: search cover enrich: %v", err)
+		return
+	}
+	byID := make(map[string]model.SeriesSummary, len(details))
+	for _, d := range details {
+		s := d.Series
+		if s == nil || s.ID == "" || s.CoverURL == "" {
+			continue
+		}
+		byID[s.ID] = s.SeriesSummary
+	}
+	for i := range page.Items {
+		if page.Items[i].CoverURL != "" {
+			continue
+		}
+		if s, ok := byID[page.Items[i].ID]; ok {
+			page.Items[i].CoverURL = s.CoverURL
+			page.Items[i].CoverExpiresAt = s.CoverExpiresAt
+			if page.Items[i].EpisodeCount == 0 && s.EpisodeCount > 0 {
+				page.Items[i].EpisodeCount = s.EpisodeCount
+			}
+			if page.Items[i].Description == "" && s.Description != "" {
+				page.Items[i].Description = s.Description
+			}
+		}
+	}
 }
 
 // Discover loads the bookstore recommend feed.

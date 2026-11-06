@@ -1,0 +1,47 @@
+[
+  {
+    "feature": "首页封面",
+    "shots": [
+      "S01-home-covers.png"
+    ]
+  },
+  {
+    "feature": "剧场",
+    "shots": [
+      "S02-theater.png"
+    ]
+  },
+  {
+    "feature": "搜索",
+    "shots": [
+      "S03-search-results.png"
+    ]
+  },
+  {
+    "feature": "播放切集",
+    "shots": [
+      "S04-player.png",
+      "S04-player-next.png"
+    ]
+  },
+  {
+    "feature": "离开播放藏mpv",
+    "shots": [
+      "S05-history-leave-player.png",
+      "S08-home-clean.png"
+    ]
+  },
+  {
+    "feature": "收藏历史",
+    "shots": [
+      "S05-history-leave-player.png",
+      "S06-favorites.png"
+    ]
+  },
+  {
+    "feature": "设置",
+    "shots": [
+      "S07-settings.png"
+    ]
+  }
+]

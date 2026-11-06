@@ -52,5 +52,7 @@ public sealed class MpvPlayerHost : IDisposable
     public Task ToggleMuteAsync(CancellationToken ct = default) => _player.ToggleMuteAsync(ct);
     public Task<TimeSpan> GetPositionAsync(CancellationToken ct = default) => _player.GetPositionAsync(ct);
 
+    public void SetVideoWindowVisible(bool visible) => _player.SetVideoWindowVisible(visible);
+
     public void Dispose() => _player.Dispose();
 }
