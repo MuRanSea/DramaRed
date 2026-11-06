@@ -49,6 +49,15 @@
     <Style Selector="Button.poster:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="#FF26262A"/>
     </Style>
+    <Style Selector="Button.accent">
+      <Setter Property="Background" Value="#FFFF4D3A"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="14,8"/>
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFFF6B5A"/>
+    </Style>
     <Style Selector="Button.chip">
       <Setter Property="Padding" Value="10,6"/>
       <Setter Property="Margin" Value="0,0,8,8"/>

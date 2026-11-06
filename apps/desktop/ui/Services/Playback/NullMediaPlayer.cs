@@ -15,7 +15,7 @@ public sealed class NullMediaPlayer : IMediaPlayer
 
     public Task OpenAsync(string url, string? contentKeyHex = null, CancellationToken ct = default) =>
         throw new InvalidOperationException(
-            "No media backend available. Install system libmpv (Linux/macOS) or place libmpv-2.dll beside the app (Windows).");
+            "当前无法播放：缺少 libmpv。请确认程序目录有 libmpv-2.dll（Windows 发布包已捆绑），或在系统中安装 libmpv。");
 
     public Task PauseAsync(CancellationToken ct = default) => Task.CompletedTask;
     public Task ResumeAsync(CancellationToken ct = default) => Task.CompletedTask;

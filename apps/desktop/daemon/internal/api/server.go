@@ -48,7 +48,28 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeErr(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
+	writeJSON(w, status, map[string]string{
+		"error":   msg,
+		"message": friendlyUpstream(msg),
+	})
+}
+
+func friendlyUpstream(raw string) string {
+	low := strings.ToLower(raw)
+	switch {
+	case strings.Contains(low, "502"), strings.Contains(low, "bad gateway"):
+		return "上游短剧服务暂时不可用（网关错误），请稍后重试"
+	case strings.Contains(low, "503"), strings.Contains(low, "unavailable"):
+		return "上游短剧服务繁忙，请稍后重试"
+	case strings.Contains(low, "504"), strings.Contains(low, "timeout"):
+		return "上游短剧服务响应超时，请稍后重试"
+	case strings.Contains(low, "429"):
+		return "请求过于频繁，请稍后再试"
+	case strings.Contains(low, "connection refused"), strings.Contains(low, "network"):
+		return "网络连接失败，请检查网络后重试"
+	default:
+		return "获取内容失败，请稍后重试"
+	}
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {

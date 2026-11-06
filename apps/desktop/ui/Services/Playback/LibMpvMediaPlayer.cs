@@ -88,9 +88,13 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
             throw new InvalidOperationException("mpv_create failed");
         }
 
-        // Prefer a real window when a display is available; else audio-only.
-        var display = Environment.GetEnvironmentVariable("DISPLAY");
-        if (!string.IsNullOrWhiteSpace(display))
+        // Windows / macOS always get an external video window.
+        // On Linux, prefer a real window when DISPLAY/WAYLAND_DISPLAY is set; else audio-only.
+        var hasDisplay = OperatingSystem.IsWindows()
+            || OperatingSystem.IsMacOS()
+            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+            || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
+        if (hasDisplay)
         {
             // External window (issue #8 accepts 外接窗口).
             _ = _mpvSetOptionString(_ctx, "force-window", "yes");
@@ -131,18 +135,18 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
             try
             {
                 player = new LibMpvMediaPlayer(candidate, lib);
-                detail = $"libmpv ready ({candidate})";
+                detail = $"播放后端就绪（{Path.GetFileName(candidate)}）";
                 return true;
             }
             catch (Exception ex)
             {
                 NativeLibrary.Free(lib);
-                detail = $"probe {candidate}: {ex.Message}";
+                detail = $"探测 {Path.GetFileName(candidate)} 失败：{ex.Message}";
                 // try next candidate
             }
         }
 
-        detail = "no libmpv candidate found on this OS";
+        detail = "未找到 libmpv。Windows 请将 libmpv-2.dll 放在程序目录（发布包已捆绑）；Linux/macOS 请安装系统 libmpv。";
         player = new NullMediaPlayer();
         return false;
     }

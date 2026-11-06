@@ -51,3 +51,8 @@ apps/android/android/local.properties
 
 # Desktop packaging output
 dist/
+
+# Local caches (libmpv download, etc.)
+.cache/
+third_party/libmpv-win-x64/libmpv-2.dll
+third_party/**/libmpv-2.dll.box-store-snap-*

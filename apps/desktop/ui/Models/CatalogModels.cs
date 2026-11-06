@@ -27,6 +27,8 @@ public sealed class EpisodeItem
 
     public string ListLabel =>
         string.IsNullOrWhiteSpace(Title) ? $"第 {Number} 集" : $"第 {Number} 集 · {Title}";
+
+    public string ChipLabel => Number > 0 ? $"第 {Number} 集" : (string.IsNullOrWhiteSpace(Title) ? Id : Title);
 }
 
 public sealed class PageResult<T>

@@ -49,13 +49,15 @@ public partial class MainWindow : Window
         HistoryList.ItemsSource = _history;
         EpisodeList.ItemsSource = _episodes;
 
-        PlayerBackend.Text = $"播放后端：{_player.BackendDetail}";
-        SettingsBackend.Text = $"播放后端：{_player.BackendDetail}";
-        StatusBar.Text = $"TFM=net10.0 · {_player.BackendDetail}";
+        var backend = HumanBackend(_player.BackendDetail, _player.IsNullBackend);
+        PlayerBackend.Text = backend;
+        SettingsBackend.Text = backend;
+        StatusBar.Text = backend;
         if (_player.IsNullBackend)
         {
-            PlayerStatus.Text = "无 libmpv：仍可浏览与选剧；打开流会提示安装系统库或将 libmpv-2.dll 放到程序旁。";
+            PlayerStatus.Text = "当前缺少播放组件。发布包应已捆绑 libmpv-2.dll；若仍看到本提示，请把 DLL 放到程序目录后重启。仍可浏览与选剧。";
         }
+        SetPlayerEmptyVisible(true);
 
         _player.PlaybackEnded += OnPlaybackEnded;
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
@@ -102,10 +104,10 @@ public partial class MainWindow : Window
             var ok = await _supervisor.EnsureRunningAsync(_daemon);
             var detail = ok
                 ? (_supervisor.StartedByUs
-                    ? $"daemon OK（已自动拉起 {_supervisor.DaemonPath}）"
-                    : $"daemon OK（{_daemon.BaseAddress}）")
-                : $"daemon 未响应（{_daemon.BaseAddress}）。请先运行 drama-daemon，或把它和本程序放在同一目录。";
-            StatusBar.Text = $"{detail} · {_player.BackendDetail}";
+                    ? $"本地服务正常（已自动拉起）"
+                    : $"本地服务正常（{_daemon.BaseAddress}）")
+                : (_supervisor.LastError ?? $"本地服务未响应（{_daemon.BaseAddress}）。请确认 drama-daemon 与本程序同目录。");
+            StatusBar.Text = detail;
             SettingsHealth.Text = detail;
         }
         catch (Exception ex)
@@ -193,16 +195,25 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            SearchHint.Text = $"搜索失败：{ex.Message}（确认 daemon 已启动）";
+            SearchHint.Text = FriendlyError(ex);
+            StatusBar.Text = SearchHint.Text;
         }
     }
 
     private async Task RefreshDiscoverAsync()
     {
-        HomeHint.Text = "加载推荐…";
-        TheaterHint.Text = "加载剧场…";
+        HomeHint.Text = "正在加载推荐…";
+        TheaterHint.Text = "正在加载剧场…";
+        HomeEmpty.IsVisible = false;
+        TheaterEmpty.IsVisible = false;
         try
         {
+            // Make sure daemon is up before first upstream call (cold start / 502 race).
+            if (!await _daemon.HealthAsync())
+            {
+                await EnsureDaemonAsync();
+            }
+
             var page = await _daemon.DiscoverAsync();
             _home.Clear();
             _theater.Clear();
@@ -216,16 +227,61 @@ public partial class MainWindow : Window
                 _ = LoadCoverAsync(home);
                 _ = LoadCoverAsync(theater);
             }
-            var msg = _home.Count == 0 ? "推荐为空" : $"共 {_home.Count} 部";
-            HomeHint.Text = msg + " · 点击海报进入播放页（竖屏预览 + 旁侧选集）";
-            TheaterHint.Text = msg + " · 宽屏网格找剧，对齐手机「剧场」瀑布流的内容，形态改为桌面海报墙";
+            if (_home.Count == 0)
+            {
+                HomeHint.Text = "推荐为空";
+                TheaterHint.Text = "剧场为空";
+                HomeEmptyDetail.Text = "上游没有返回剧目，可稍后重试或用顶栏搜索。";
+                TheaterEmptyDetail.Text = HomeEmptyDetail.Text;
+                HomeEmpty.IsVisible = true;
+                TheaterEmpty.IsVisible = true;
+            }
+            else
+            {
+                HomeHint.Text = $"共 {_home.Count} 部 · 点击海报进入播放";
+                TheaterHint.Text = $"共 {_theater.Count} 部 · 宽屏海报墙找剧";
+                HomeEmpty.IsVisible = false;
+                TheaterEmpty.IsVisible = false;
+            }
         }
         catch (Exception ex)
         {
-            HomeHint.Text = $"推荐失败：{ex.Message}";
-            TheaterHint.Text = $"剧场失败：{ex.Message}";
+            var msg = FriendlyError(ex);
+            HomeHint.Text = msg;
+            TheaterHint.Text = msg;
+            HomeEmptyDetail.Text = msg;
+            TheaterEmptyDetail.Text = msg;
+            HomeEmpty.IsVisible = _home.Count == 0;
+            TheaterEmpty.IsVisible = _theater.Count == 0;
+            StatusBar.Text = msg;
         }
     }
+
+    private static string FriendlyError(Exception ex) =>
+        ex is DaemonApiException ? ex.Message : $"操作失败：{ex.Message}";
+
+    private static string HumanBackend(string detail, bool isNull)
+    {
+        if (!isNull && detail.Contains("就绪", StringComparison.Ordinal))
+            return detail.StartsWith("播放后端", StringComparison.Ordinal) ? detail : $"播放后端：{detail}";
+        if (isNull)
+            return "播放后端：未就绪（缺少 libmpv）。浏览不受影响；发布包应已捆绑 libmpv-2.dll。";
+        return $"播放后端：{detail}";
+    }
+
+    private void SetPlayerEmptyVisible(bool empty)
+    {
+        if (PlayerEmpty != null) PlayerEmpty.IsVisible = empty;
+    }
+
+    private async void OnRefreshHome(object? sender, RoutedEventArgs e)
+    {
+        StatusBar.Text = "正在重新加载…";
+        await EnsureDaemonAsync();
+        await RefreshDiscoverAsync();
+    }
+
+    private void OnGoHome(object? sender, RoutedEventArgs e) => ShowPage("home");
 
     private void Remember(SeriesSummary series)
     {
@@ -261,6 +317,7 @@ public partial class MainWindow : Window
         Remember(series);
         _currentSeries = series;
         SeriesTitle.Text = string.IsNullOrWhiteSpace(series.Title) ? series.Id : series.Title;
+        SetPlayerEmptyVisible(false);
         ShowPage("player");
         await LoadEpisodesAsync(series);
         await RefreshFavoriteStateAsync();
@@ -307,7 +364,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            EpisodeHint.Text = $"分集失败：{ex.Message}";
+            EpisodeHint.Text = FriendlyError(ex);
+            StatusBar.Text = EpisodeHint.Text;
         }
     }
 
@@ -359,7 +417,7 @@ public partial class MainWindow : Window
             }
 
             PlayerStatus.Text =
-                $"播放中 · {PlaybackPlanner.LabelOf(chosen)} · 竖屏预览在左侧；影像在独立 mpv 窗口";
+                $"播放中 · {PlaybackPlanner.LabelOf(chosen)} · 画面在独立播放窗口";
             await _daemon.HistoryUpsertAsync(new HistoryItem
             {
                 SeriesId = _currentSeries?.Id ?? ep.SeriesId,
@@ -372,7 +430,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            PlayerStatus.Text = $"播放失败：{ex.Message}";
+            PlayerStatus.Text = FriendlyError(ex);
+            StatusBar.Text = PlayerStatus.Text;
         }
     }
 
