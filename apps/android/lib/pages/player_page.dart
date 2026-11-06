@@ -270,7 +270,12 @@ class _PlayerPageState extends State<PlayerPage> with WidgetsBindingObserver {
         .toSet()
         .toList();
     _definitions = ['自动', ...defs];
-    _status = result.playback.protected ? '受保护流（尝试 ClearKey/decryption_key）' : '播放中';
+    final hasKey = result.contentKey?.key.isNotEmpty == true;
+    if (result.playback.protected && !hasKey) {
+      _status = '此集受保护，暂无法解密';
+    } else {
+      _status = '播放中';
+    }
   }
 
   Future<void> _prefetchNext() async {
