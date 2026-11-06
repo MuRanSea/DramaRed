@@ -61,7 +61,7 @@
 | 进收藏/历史后导航卡死 | **已修（代码）** | FIXES §9：`_navSync` + ShowPage 不 await 库刷新 + 进度 timer 去 async void；单测 `ShowPage_history_favorites_does_not_await_network`。**尚未用本提交再跑一轮 GUI 截图**（本回合只交代码+REVIEW）。 |
 | 隐藏继续听唤回黑窗 | **仍 open** | A10 / D-BG-01；与本 PR 无关，另开 |
 | SDK 乱搜弱相关 | **仍 open / 上游** | 客户端如实显示；不伪造空结果 |
-| 安卓竖滑/全功能截图 | **TBD** | `feature-audit-20261106/android/` 与 `feature-review-20261106/android/` 有部分帧；未纳入本桌面终评的 PR-ok 门禁 |
+| 安卓竖滑/全功能截图 | **已复拍 R01–R08** | 见下方 Android R 组；ClearKey 过、封面仍灰 |
 
 ---
 
@@ -85,21 +85,46 @@
 
 ## Android（audit B 组 + ClearKey/封面修复）
 
-对照：红果竖滑首页、剧场九宫格真封面、播控无 DRM 黑话。证据：`android/B01`–`B06`；说明见 `android/NOTES.md`。
+对照：红果竖滑首页、剧场九宫格真封面、播控无 DRM 黑话。证据：`android/B01`–`B06`（修前）；说明见 `android/NOTES.md`。
 
 | id | 修前截图结论 | 证据 | 本 PR 代码 | 合入后仍欠 |
 |---|---|---|---|---|
 | B01 首页竖滑推荐 | **过**（沉浸单列+真封面） | B01 | 无改 | — |
 | B02 上滑下一推 | **过** | B02 | 无改 | — |
-| B03 剧场九宫格 | **不过** — 标题有、封面全灰占位 | B03 | HEIC→PNG MethodChannel + CoverImage | 需重装 APK 复拍；API&lt;28 / 无 HEIF 编解码仍可能灰（NOTES） |
+| B03 剧场九宫格 | **不过** — 标题有、封面全灰占位 | B03 | HEIC→PNG MethodChannel + CoverImage | 见 R03：仍灰 |
 | B04 搜索空态 | 有帧 | B04 | 无改 | — |
 | B05 搜索结果 | 有帧 | B05 | 无改 | — |
-| B06 播放器 | **不过** — 黑屏 + `受保护流 (尝试 ClearKey/decryption_key)` | B06 | silent ClearKey UX；友好失败文案 | 需重装后确认 jargon 消失；真解密失败仍可能黑屏但文案友好 |
+| B06 播放器 | **不过** — 黑屏 + `受保护流 (尝试 ClearKey/decryption_key)` | B06 | silent ClearKey UX；友好失败文案 | 见 R05：jargon **已消失** |
 
-### Android verdict（相对成熟短剧 App）
+**作废：** `B10`/`B11`/`B12` 为番茄 splash，**不纳入评审**。
 
-- **修前（B06/B03）不通过 PR-ok 门禁**：播放器甩 ClearKey 技术串；剧场封面不可用。
-- **本 PR 代码**：ClearKey **silent**（对齐 PR #25 意图并去掉残留「解密」话术）；剧场 HEIC 走系统 BitmapFactory（API 28+）。
-- **仍不宣称可发版 / 不发 Release**：缺修后安卓复拍；解密失败黑屏、低 API HEIC 仍为 Known。
+### Android R 组复拍（`13f5968` APK · 2026-11-07 Asia/Shanghai）
+
+重装 `app-x86_64-debug.apk` 后逐项截图自审。证据：`android/R01`–`R08`。
+
+| id | 结论 | 证据 | 说明 |
+|---|---|---|---|
+| R01 首页沉浸推荐 | **过（布局）/ 封面弱** | R01 | 单列推荐有标题 CTA；封面未画 |
+| R02 上滑换剧 | **过（换剧）/ 封面炸** | R02 | 换到另一部；可见 `Exception: Could not decompress image.` |
+| R03 剧场九宫格 | **不过（封面）** | R03 | 标题有；封面灰 / decompress Exception |
+| R04 搜索结果 | **过（结果）/ 封面灰** | R04 | 有结果标题；封面占位 |
+| R05 播放器 ClearKey | **过** | R05 | 「播放中」；**无** 受保护流/ClearKey/decryption_key；黑屏可接受为解密残差 |
+| R06 我的·历史 | **过** | R06 | 真页非 splash；历史项+进度；封面灰 |
+| R07 收藏 | **过** | R07 | 「收藏」选中；三部收藏；封面灰 |
+| R08 设置 | **过** | R08 | 定时 / 后台听 / 连播 |
+
+### Android verdict（相对成熟短剧 App · 诚实）
+
+- **ClearKey 门禁：过**（R05 复拍确认 jargon 消失）。
+- **剧场/列表真封面：仍不过** — logcat `HandshakeException` 拉 HEIC；API 35 也未画出。部分错误路径还甩 Exception 文案（不合理）。
+- **首页竖滑 / 我的 / 设置：布局过**，弱于红果处主要在封面与播画像素。
+- **不宣称可发版 / 不发 Release。**
 
 **未发 GitHub Release / 未出 zip。**
+
+## 导航卡死复测（N01–N03）
+
+**过。** 收藏→历史→剧场→设置→推荐→播放→回历史→剧场，侧栏每次都能换页（`c249cf2` 后 GUI 复测）。
+
+证据：`desktop/N01`–`N03`。
+
