@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Content Include="Assets/app.ico" CopyToOutputDirectory="PreserveNewest" />
+    <AvaloniaResource Include="Assets/tomato.png" />
   </ItemGroup>
 
   <ItemGroup>

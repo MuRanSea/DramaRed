@@ -650,6 +650,13 @@ public partial class MainWindow : Window
         }
     }
 
+
+    private void OnSettingsAutoNextChanged(object? sender, RoutedEventArgs e)
+    {
+        if (SettingsAutoNextBox is null || AutoNextBox is null) return;
+        AutoNextBox.IsChecked = SettingsAutoNextBox.IsChecked;
+    }
+
     private void OnStopAfterChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (StopAfterBox is null) return;
@@ -659,13 +666,15 @@ public partial class MainWindow : Window
         {
             _stopDeadline = null;
             _player.StopAfter = null;
-            TimerHint.Text = "定时停止：关";
+            if (TimerSettingsHint is not null) TimerSettingsHint.Text = "当前：关";
+            if (TimerHint is not null) TimerHint.Text = "定时停播请到「设置」调整";
             return;
         }
 
         _player.StopAfter = TimeSpan.FromMinutes(minutes);
+        if (TimerSettingsHint is not null) TimerSettingsHint.Text = $"当前：{minutes} 分钟";
+        if (TimerHint is not null) TimerHint.Text = $"定时停播：{minutes} 分钟后暂停（设置可改）";
         _stopDeadline = DateTimeOffset.Now.AddMinutes(minutes);
-        TimerHint.Text = $"定时停止：{minutes} 分钟后暂停";
         _stopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _stopTimer.Tick += async (_, _) =>
         {

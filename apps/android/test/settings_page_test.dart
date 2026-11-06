@@ -18,16 +18,17 @@ void main() {
     expect(find.text('定时停播'), findsOneWidget);
     expect(find.text('后台继续听'), findsOneWidget);
     expect(find.text('自动连播下一集'), findsOneWidget);
-    expect(find.text('关闭'), findsWidgets);
+    expect(find.text('关'), findsOneWidget);
+    expect(find.text('15分'), findsOneWidget);
+    expect(find.text('30分'), findsOneWidget);
+    expect(find.text('60分'), findsOneWidget);
   });
 
   testWidgets('choosing 15 minutes persists stopAfterMinutes', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: SettingsPage()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(DropdownButton<int>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('15 分钟').last);
+    await tester.tap(find.text('15分'));
     await tester.pumpAndSettle();
 
     final loaded = await PlaybackSettingsStore().load();
