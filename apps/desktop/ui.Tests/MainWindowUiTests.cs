@@ -208,4 +208,27 @@ public class MainWindowUiTests
         await Task.Delay(50);
         await Dispatcher.UIThread.InvokeAsync(() => { });
     }
+
+    [AvaloniaFact]
+    public async Task Top_bar_has_no_stacked_brand()
+    {
+        await using var fake = new FakeDaemonServer();
+        using var daemon = new DaemonClient(fake.BaseAddress);
+        var window = CreateWindow(daemon);
+        window.Show();
+        await Pump();
+
+        var texts = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "")
+            .ToList();
+        Assert.DoesNotContain(texts, t => t == "桌面端");
+        Assert.DoesNotContain(
+            window.GetVisualDescendants().OfType<TextBlock>()
+                .Where(t => t.FontWeight == Avalonia.Media.FontWeight.Bold && t.FontSize >= 18)
+                .Select(t => t.Text),
+            t => t == "DramaRed");
+
+        window.Close();
+    }
+
 }

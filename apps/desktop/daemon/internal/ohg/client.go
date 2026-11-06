@@ -15,8 +15,11 @@ import (
 )
 
 const (
-	maxAttempts   = 4
-	discoverCache = 10 * time.Minute
+	maxAttempts      = 4
+	discoverAttempts = 2 // fast path: prefer fallback over long empty-tab retries
+	discoverDeadline = 22 * time.Second
+	searchDeadline   = 22 * time.Second
+	discoverCache    = 10 * time.Minute
 )
 
 // Client wraps openhongguo SDK v0.2.0 for the local HTTP API.
@@ -85,15 +88,22 @@ func (c *Client) Search(ctx context.Context, q string) (*sdk.Page[model.SeriesSu
 	if c.inner == nil {
 		return nil, fmt.Errorf("ohg: nil client")
 	}
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(ctx, searchDeadline)
+	defer cancel()
 	var last error
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
+	// Cap retries so Search cannot burn the whole UI budget.
+	const searchAttempts = 2
+	for attempt := 1; attempt <= searchAttempts; attempt++ {
 		page, err := c.inner.Search(ctx, q, sdk.SearchOptions{})
 		if err == nil {
 			c.enrichSearchCovers(ctx, page)
+			log.Printf("ohg search ok q=%q items=%d elapsed=%s", q, len(page.Items), time.Since(start).Round(time.Millisecond))
 			return page, nil
 		}
 		last = err
-		if attempt == maxAttempts || !isTransient(err) {
+		if attempt == searchAttempts || !isTransient(err) {
+			log.Printf("ohg search fail q=%q attempt=%d elapsed=%s err=%v", q, attempt, time.Since(start).Round(time.Millisecond), err)
 			return nil, fmt.Errorf("search: %w", err)
 		}
 		if err := sleepBackoff(ctx, attempt); err != nil {
@@ -158,15 +168,19 @@ func (c *Client) enrichSearchCovers(ctx context.Context, page *sdk.Page[model.Se
 // Root cause of the user-facing "502": when the recommend tab returns 0 items,
 // openhongguo yields ErrAnonymousLimited. Our HTTP API used to map *every*
 // ohg error to status 502, so the UI showed Bad Gateway even though the local
- // daemon was healthy and Search still worked. Here we recover by:
-//  1. retrying transient failures (incl. empty anonymous tab);
-//  2. ResetDevice once then rediscover;
-//  3. falling back to Search("短剧") / NewReleases;
+// daemon was healthy and Search still worked. Here we recover by:
+//  1. a hard overall deadline (~22s) so the UI never hangs for minutes;
+//  2. a short discoverOnce (1–2 attempts) then ResetDevice once + rediscover;
+//  3. falling back quickly to Search("短剧") / NewReleases;
 //  4. serving a short-lived in-memory cache of the last good page.
 func (c *Client) Discover(ctx context.Context) (*sdk.Page[model.SeriesSummary], error) {
 	if c.inner == nil {
 		return nil, fmt.Errorf("ohg: nil client")
 	}
+
+	start := time.Now()
+	ctx, cancel := context.WithTimeout(ctx, discoverDeadline)
+	defer cancel()
 
 	c.discoverMu.Lock()
 	defer c.discoverMu.Unlock()
@@ -174,17 +188,19 @@ func (c *Client) Discover(ctx context.Context) (*sdk.Page[model.SeriesSummary], 
 	page, err := c.discoverOnce(ctx)
 	if err == nil && page != nil && len(page.Items) > 0 {
 		c.rememberDiscover(page, "discover")
+		log.Printf("ohg discover ok src=discover items=%d elapsed=%s", len(page.Items), time.Since(start).Round(time.Millisecond))
 		return page, nil
 	}
 
-	if errors.Is(err, sdk.ErrAnonymousLimited) || (page != nil && len(page.Items) == 0) {
-		log.Printf("ohg discover empty/limited (%v); resetting anonymous device", err)
+	if errors.Is(err, sdk.ErrAnonymousLimited) || (page != nil && len(page.Items) == 0) || isTransient(err) {
+		log.Printf("ohg discover empty/limited/slow (%v) after %s; resetting anonymous device", err, time.Since(start).Round(time.Millisecond))
 		if resetErr := c.inner.ResetDevice(ctx); resetErr != nil {
 			log.Printf("ohg ResetDevice: %v", resetErr)
-		} else if err := sleepBackoff(ctx, 1); err != nil {
-			return nil, err
+		} else if waitErr := sleepBackoff(ctx, 1); waitErr != nil {
+			err = waitErr
 		} else if page2, err2 := c.discoverOnce(ctx); err2 == nil && page2 != nil && len(page2.Items) > 0 {
 			c.rememberDiscover(page2, "discover-after-reset")
+			log.Printf("ohg discover ok src=discover-after-reset items=%d elapsed=%s", len(page2.Items), time.Since(start).Round(time.Millisecond))
 			return page2, nil
 		} else if err2 != nil {
 			err = err2
@@ -192,25 +208,29 @@ func (c *Client) Discover(ctx context.Context) (*sdk.Page[model.SeriesSummary], 
 	}
 
 	if fb, src, fbErr := c.discoverFallback(ctx); fbErr == nil && fb != nil && len(fb.Items) > 0 {
-		log.Printf("ohg discover fallback via %s (%d items)", src, len(fb.Items))
+		log.Printf("ohg discover fallback via %s (%d items) elapsed=%s", src, len(fb.Items), time.Since(start).Round(time.Millisecond))
 		c.rememberDiscover(fb, src)
 		return fb, nil
 	}
 
 	if cached := c.cachedDiscover(); cached != nil {
-		log.Printf("ohg discover serving stale cache (%d items, src=%s)", len(cached.Items), c.cachedSrc)
+		log.Printf("ohg discover serving stale cache (%d items, src=%s) elapsed=%s", len(cached.Items), c.cachedSrc, time.Since(start).Round(time.Millisecond))
 		return cached, nil
 	}
 
 	if err == nil {
 		err = sdk.ErrAnonymousLimited
 	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		err = fmt.Errorf("discover deadline exceeded after %s: %w", time.Since(start).Round(time.Millisecond), err)
+	}
+	log.Printf("ohg discover fail elapsed=%s err=%v", time.Since(start).Round(time.Millisecond), err)
 	return nil, fmt.Errorf("discover: %w", err)
 }
 
 func (c *Client) discoverOnce(ctx context.Context) (*sdk.Page[model.SeriesSummary], error) {
 	var last error
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
+	for attempt := 1; attempt <= discoverAttempts; attempt++ {
 		page, err := c.inner.Discover(ctx, sdk.DiscoverOptions{})
 		if err == nil && page != nil && len(page.Items) > 0 {
 			return page, nil
@@ -219,7 +239,7 @@ func (c *Client) discoverOnce(ctx context.Context) (*sdk.Page[model.SeriesSummar
 			err = sdk.ErrAnonymousLimited
 		}
 		last = err
-		if attempt == maxAttempts || !isTransient(err) {
+		if attempt == discoverAttempts || !isTransient(err) {
 			return nil, err
 		}
 		if waitErr := sleepBackoff(ctx, attempt); waitErr != nil {

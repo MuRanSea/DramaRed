@@ -12,18 +12,13 @@
     </Border>
 
     <Border DockPanel.Dock="Top" Background="#FF111113" Padding="18,12" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <Image Width="22" Height="22" Source="avares://DramaRed.UI/Assets/tomato.png"/>
-          <TextBlock FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Text="DramaRed"/>
-          <TextBlock Classes="muted" VerticalAlignment="Center" Text="桌面端"/>
-        </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
           <TextBox Name="SearchBox" Width="420" PlaceholderText="搜索短剧、演员…"
                    KeyDown="OnSearchKeyDown"/>
           <Button Classes="accent" Content="搜索" Click="OnSearch"/>
         </StackPanel>
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
           <Button Content="隐藏继续听" Click="OnHideToTray" ToolTip.Tip="Ctrl+H · 窗口隐藏，音频继续"/>
           <Button Content="刷新" Click="OnRefreshHome" ToolTip.Tip="重新加载推荐"/>
           <Button Content="设置" Click="OnAbout"/>

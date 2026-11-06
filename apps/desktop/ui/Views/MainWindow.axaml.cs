@@ -38,6 +38,7 @@ public partial class MainWindow : Window
     private DispatcherTimer? _progressTimer;
     private DateTimeOffset? _stopDeadline;
     private TrayIcon? _tray;
+    private CancellationTokenSource? _discoverCts;
 
     public MainWindow()
         : this(new DaemonClient(), new DaemonSupervisor(), new MpvPlayerHost(), ownsDaemon: true, autoBootstrap: true)
@@ -243,19 +244,28 @@ public partial class MainWindow : Window
 
     private async Task RefreshDiscoverAsync()
     {
+        // Cancel any in-flight discover so Reload mid-flight starts fresh.
+        _discoverCts?.Cancel();
+        _discoverCts?.Dispose();
+        _discoverCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var ct = _discoverCts.Token;
+
         HomeHint.Text = "正在加载推荐…";
         TheaterHint.Text = "正在加载剧场…";
+        StatusBar.Text = "正在拉取推荐…";
         HomeEmpty.IsVisible = false;
         TheaterEmpty.IsVisible = false;
         try
         {
             // Make sure daemon is up before first upstream call (cold start / 502 race).
-            if (!await _daemon.HealthAsync())
+            if (!await _daemon.HealthAsync(ct))
             {
                 await EnsureDaemonAsync();
             }
 
-            var page = await _daemon.DiscoverAsync();
+            var page = await _daemon.DiscoverAsync(ct);
+            if (ct.IsCancellationRequested) return;
+
             _home.Clear();
             _theater.Clear();
             foreach (var s in page?.Items ?? Enumerable.Empty<SeriesSummary>())
@@ -276,6 +286,7 @@ public partial class MainWindow : Window
                 TheaterEmptyDetail.Text = HomeEmptyDetail.Text;
                 HomeEmpty.IsVisible = true;
                 TheaterEmpty.IsVisible = true;
+                StatusBar.Text = HomeHint.Text;
             }
             else
             {
@@ -283,11 +294,28 @@ public partial class MainWindow : Window
                 TheaterHint.Text = $"共 {_theater.Count} 部 · 宽屏海报墙找剧";
                 HomeEmpty.IsVisible = false;
                 TheaterEmpty.IsVisible = false;
+                StatusBar.Text = HomeHint.Text;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            const string timeoutMsg = "推荐加载超时，可点重试或用顶栏搜索";
+            HomeHint.Text = timeoutMsg;
+            TheaterHint.Text = timeoutMsg;
+            HomeEmptyDetail.Text = timeoutMsg;
+            TheaterEmptyDetail.Text = timeoutMsg;
+            HomeEmpty.IsVisible = _home.Count == 0;
+            TheaterEmpty.IsVisible = _theater.Count == 0;
+            StatusBar.Text = timeoutMsg;
         }
         catch (Exception ex)
         {
             var msg = FriendlyError(ex);
+            // Normalize timeout wording from DaemonClient.
+            if (msg.Contains("超时", StringComparison.Ordinal) || msg.Contains("timeout", StringComparison.OrdinalIgnoreCase))
+            {
+                msg = "推荐加载超时，可点重试或用顶栏搜索";
+            }
             HomeHint.Text = msg;
             TheaterHint.Text = msg;
             HomeEmptyDetail.Text = msg;

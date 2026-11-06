@@ -44,4 +44,15 @@ public class DaemonClientTests
         Assert.NotEmpty(pb.Playback!.Streams);
         Assert.StartsWith("https://", pb.Playback.Streams[0].Url);
     }
+
+    [Fact]
+    public async Task Discover_caller_cancel_does_not_hang()
+    {
+        await using var fake = new FakeDaemonServer { DiscoverDelayMs = 15_000 };
+        using var client = new DaemonClient(fake.BaseAddress);
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => client.DiscoverAsync(cts.Token));
+    }
+
 }
