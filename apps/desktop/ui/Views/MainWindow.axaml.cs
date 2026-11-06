@@ -447,8 +447,7 @@ public partial class MainWindow : Window
             }
 
             var key = resp?.ContentKey?.Key;
-            PlayerStatus.Text =
-                $"打开 {PlaybackPlanner.LabelOf(chosen)}…{(resp?.DrmProtected == true ? "（DRM/受保护，best-effort key）" : "")}";
+            PlayerStatus.Text = $"打开 {PlaybackPlanner.LabelOf(chosen)}…";
 
             await _player.OpenAsync(chosen.Url, string.IsNullOrWhiteSpace(key) ? null : key);
             _paused = false;
