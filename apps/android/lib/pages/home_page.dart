@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
 
   void _reload() {
     setState(() {
-      _future = OhgClient.instance().then((c) => c.discover());
+      _future = OhgClient.instance().then((c) => c.discoverResilient());
     });
   }
 
