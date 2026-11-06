@@ -299,7 +299,7 @@ public partial class MainWindow : Window
         }
         catch (OperationCanceledException)
         {
-            const string timeoutMsg = "推荐加载超时，可点重试或用顶栏搜索";
+            const string timeoutMsg = "推荐加载超时，请重试或用顶栏搜索";
             HomeHint.Text = timeoutMsg;
             TheaterHint.Text = timeoutMsg;
             HomeEmptyDetail.Text = timeoutMsg;
@@ -314,7 +314,7 @@ public partial class MainWindow : Window
             // Normalize timeout wording from DaemonClient.
             if (msg.Contains("超时", StringComparison.Ordinal) || msg.Contains("timeout", StringComparison.OrdinalIgnoreCase))
             {
-                msg = "推荐加载超时，可点重试或用顶栏搜索";
+                msg = "推荐加载超时，请重试或用顶栏搜索";
             }
             HomeHint.Text = msg;
             TheaterHint.Text = msg;
@@ -326,8 +326,22 @@ public partial class MainWindow : Window
         }
     }
 
-    private static string FriendlyError(Exception ex) =>
-        ex is DaemonApiException ? ex.Message : $"操作失败：{ex.Message}";
+    private static string FriendlyError(Exception ex)
+    {
+        if (ex is DaemonApiException) return ex.Message;
+        // Never surface raw HttpClient.Timeout English to the user.
+        for (Exception? e = ex; e != null; e = e.InnerException)
+        {
+            var msg = e.Message ?? "";
+            if (e is TaskCanceledException or OperationCanceledException or TimeoutException ||
+                msg.Contains("HttpClient.Timeout", StringComparison.OrdinalIgnoreCase) ||
+                msg.Contains("Timeout of", StringComparison.OrdinalIgnoreCase))
+            {
+                return "推荐加载超时，请重试或用顶栏搜索";
+            }
+        }
+        return $"操作失败：{ex.Message}";
+    }
 
     private static string HumanBackend(string detail, bool isNull)
     {
