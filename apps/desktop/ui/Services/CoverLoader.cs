@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 
 namespace DramaRed.UI.Services;
 
@@ -13,6 +15,20 @@ public static class CoverLoader
     };
 
     private static readonly ConcurrentDictionary<string, Bitmap?> Cache = new();
+    private static Bitmap? _placeholder;
+    private static string? _cachedFfmpegPath;
+    private static bool _ffmpegResolved;
+
+    /// <summary>Solid dark tile used when a cover cannot be decoded (e.g. HEIC without ffmpeg).</summary>
+    public static Bitmap Placeholder
+    {
+        get
+        {
+            if (_placeholder != null) return _placeholder;
+            _placeholder = CreateSolidBitmap(8, 8, 0x2A, 0x26, 0x26); // BGRA matches #26262A
+            return _placeholder;
+        }
+    }
 
     public static async Task<Bitmap?> LoadAsync(string? url, CancellationToken ct = default)
     {
@@ -48,13 +64,15 @@ public static class CoverLoader
                 bmp = await DecodeHeicAsync(bytes, ct);
             }
 
+            // Never leave cards blank when we had a URL — dark placeholder keeps titles readable.
+            bmp ??= Placeholder;
             Cache[url] = bmp;
             return bmp;
         }
         catch
         {
-            Cache.TryAdd(url, null);
-            return null;
+            Cache.TryAdd(url, Placeholder);
+            return Placeholder;
         }
     }
 
@@ -97,8 +115,21 @@ public static class CoverLoader
         }
     }
 
-    private static string? FindFfmpeg()
+    /// <summary>Prefer bundled ffmpeg next to the exe, then PATH.</summary>
+    internal static string? FindFfmpeg()
     {
+        if (_ffmpegResolved) return _cachedFfmpegPath;
+        _ffmpegResolved = true;
+
+        var bundled = Path.Combine(
+            AppContext.BaseDirectory,
+            OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg");
+        if (File.Exists(bundled))
+        {
+            _cachedFfmpegPath = bundled;
+            return _cachedFfmpegPath;
+        }
+
         foreach (var name in new[] { "ffmpeg", "ffmpeg.exe" })
         {
             try
@@ -115,11 +146,44 @@ public static class CoverLoader
                 if (p == null) continue;
                 var path = p.StandardOutput.ReadLine();
                 p.WaitForExit(2000);
-                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path.Trim())) return path.Trim();
+                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path.Trim()))
+                {
+                    _cachedFfmpegPath = path.Trim();
+                    return _cachedFfmpegPath;
+                }
             }
             catch { /* try next */ }
         }
-        var bundled = Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg");
-        return File.Exists(bundled) ? bundled : null;
+
+        _cachedFfmpegPath = null;
+        return null;
+    }
+
+    internal static void ResetForTests()
+    {
+        Cache.Clear();
+        _ffmpegResolved = false;
+        _cachedFfmpegPath = null;
+    }
+
+    private static WriteableBitmap CreateSolidBitmap(int w, int h, byte b, byte g, byte r)
+    {
+        var bmp = new WriteableBitmap(
+            new PixelSize(w, h),
+            new Vector(96, 96),
+            PixelFormat.Bgra8888,
+            AlphaFormat.Opaque);
+        using var fb = bmp.Lock();
+        var rowBytes = fb.RowBytes;
+        var pixel = new byte[] { b, g, r, 0xFF };
+        for (var y = 0; y < h; y++)
+        {
+            for (var x = 0; x < w; x++)
+            {
+                var offset = y * rowBytes + x * 4;
+                System.Runtime.InteropServices.Marshal.Copy(pixel, 0, fb.Address + offset, 4);
+            }
+        }
+        return bmp;
     }
 }
