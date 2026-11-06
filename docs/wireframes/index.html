@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>DramaRed Wireframes</title>
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#0a0a0b;color:#eee}
+  header{padding:24px 32px;border-bottom:1px solid #222}
+  h1{margin:0 0 8px;font-size:20px}
+  p{margin:0;color:#999;font-size:14px}
+  main{padding:24px 32px;display:grid;gap:32px}
+  section h2{font-size:16px;margin:0 0 12px;color:#ff4d4f}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  figure{margin:0;background:#141416;border:1px solid #2a2a2e;border-radius:12px;overflow:hidden}
+  figure img,figure object{width:100%;display:block;background:#0f0f10}
+  figcaption{padding:10px 12px;font-size:13px;color:#ccc}
+  a{color:#ffb020}
+  .note{font-size:12px;color:#888;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>DramaRed 页面原型</h1>
+  <p>权威以 *-ia.svg 与 README 标注为准 · 视觉 JPG 仅作气氛参考 · 待你确认后再改功能 UI</p>
+</header>
+<main>
+  <section>
+    <h2>Android IA 线框</h2>
+    <div class="grid">
+      <figure><object data="android/home-ia.svg" type="image/svg+xml" height="360"></object><figcaption>首页 · 竖滑换剧</figcaption></figure>
+      <figure><object data="android/theater-ia.svg" type="image/svg+xml" height="360"></object><figcaption>剧场 · 瀑布流</figcaption></figure>
+      <figure><object data="android/mine-ia.svg" type="image/svg+xml" height="360"></object><figcaption>我的 · 历史/收藏/设置</figcaption></figure>
+      <figure><object data="android/search-ia.svg" type="image/svg+xml" height="360"></object><figcaption>搜索</figcaption></figure>
+      <figure><object data="android/player-ia.svg" type="image/svg+xml" height="360"></object><figcaption>播放 · 上下滑切集</figcaption></figure>
+      <figure><object data="android/settings-ia.svg" type="image/svg+xml" height="360"></object><figcaption>设置 · 定时停</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>Desktop IA 线框</h2>
+    <div class="grid">
+      <figure><object data="desktop/shell-ia.svg" type="image/svg+xml" height="280"></object><figcaption>侧栏壳 + 海报网格</figcaption></figure>
+      <figure><object data="desktop/player-ia.svg" type="image/svg+xml" height="280"></object><figcaption>播放双栏 9:16 + 旁侧控件</figcaption></figure>
+    </div>
+  </section>
+  <section>
+    <h2>视觉参考 JPG（有偏差时以 SVG 为准）</h2>
+    <div class="grid">
+      <figure><img src="android/home.jpg" alt="home"/><figcaption>home.jpg</figcaption></figure>
+      <figure><img src="android/theater.jpg" alt="theater"/><figcaption>theater.jpg</figcaption></figure>
+      <figure><img src="android/mine.jpg" alt="mine"/><figcaption>mine.jpg · 忽略多余 Tab</figcaption></figure>
+      <figure><img src="android/search.jpg" alt="search"/><figcaption>search.jpg</figcaption></figure>
+      <figure><img src="android/player.jpg" alt="player"/><figcaption>player.jpg</figcaption></figure>
+      <figure><img src="android/settings.jpg" alt="settings"/><figcaption>settings.jpg</figcaption></figure>
+      <figure><img src="desktop/shell.jpg" alt="shell"/><figcaption>shell.jpg</figcaption></figure>
+      <figure><img src="desktop/player.jpg" alt="dplayer"/><figcaption>player.jpg · 忽略下载项</figcaption></figure>
+      <figure><img src="icon/app-icon-512.png" alt="icon"/><figcaption>应用图标 512</figcaption></figure>
+    </div>
+    <p class="note">详见 <a href="README.md">README.md</a> · <a href="../app-icon.md">app-icon.md</a></p>
+  </section>
+</main>
+</body>
+</html>
