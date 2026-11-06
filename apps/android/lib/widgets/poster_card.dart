@@ -53,9 +53,23 @@ class PosterCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                CoverImage(
-                  url: coverUrl,
-                  borderRadius: BorderRadius.circular(8),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: light
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ]
+                        : const [],
+                  ),
+                  child: CoverImage(
+                    url: coverUrl,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 if (badge.isNotEmpty)
                   Positioned(

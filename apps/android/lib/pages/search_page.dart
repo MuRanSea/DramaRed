@@ -5,6 +5,7 @@ import '../navigation/play_nav.dart';
 import '../services/ohg_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/poster_card.dart';
+import '../widgets/status_pane.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -56,7 +57,12 @@ class _SearchPageState extends State<SearchPage> {
         ],
       ),
       body: _future == null
-          ? const Center(child: Text('输入关键词搜索', style: TextStyle(color: Colors.white54)))
+          ? StatusPane.empty(
+              title: '搜索短剧',
+              detail: '输入剧名、演员或关键词，回车即可。',
+              actionLabel: '去剧场逛逛',
+              onAction: () => Navigator.of(context).maybePop(),
+            )
           : FutureBuilder<PagedResult<SeriesSummary>>(
               future: _future,
               builder: (context, snap) {
@@ -64,31 +70,27 @@ class _SearchPageState extends State<SearchPage> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snap.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('搜索失败：${snap.error}', textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: () => _run(_controller.text),
-                          child: const Text('重试'),
-                        ),
-                      ],
-                    ),
+                  return StatusPane.error(
+                    error: snap.error,
+                    onRetry: () => _run(_controller.text),
                   );
                 }
                 final items = snap.data?.items ?? const <SeriesSummary>[];
                 if (items.isEmpty) {
-                  return const Center(child: Text('无结果', style: TextStyle(color: Colors.white54)));
+                  return StatusPane.empty(
+                    title: '没有找到相关短剧',
+                    detail: '换个关键词试试，或去剧场浏览推荐。',
+                    actionLabel: '重新搜索',
+                    onAction: () => _run(_controller.text),
+                  );
                 }
                 return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 16),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.48,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: 0.50,
                   ),
                   itemCount: items.length,
                   itemBuilder: (context, i) {
