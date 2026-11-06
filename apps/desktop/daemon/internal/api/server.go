@@ -50,26 +50,16 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 func writeErr(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{
 		"error":   msg,
-		"message": friendlyUpstream(msg),
+		"message": msg,
 	})
 }
 
-func friendlyUpstream(raw string) string {
-	low := strings.ToLower(raw)
-	switch {
-	case strings.Contains(low, "502"), strings.Contains(low, "bad gateway"):
-		return "上游短剧服务暂时不可用（网关错误），请稍后重试"
-	case strings.Contains(low, "503"), strings.Contains(low, "unavailable"):
-		return "上游短剧服务繁忙，请稍后重试"
-	case strings.Contains(low, "504"), strings.Contains(low, "timeout"):
-		return "上游短剧服务响应超时，请稍后重试"
-	case strings.Contains(low, "429"):
-		return "请求过于频繁，请稍后再试"
-	case strings.Contains(low, "connection refused"), strings.Contains(low, "network"):
-		return "网络连接失败，请检查网络后重试"
-	default:
-		return "获取内容失败，请稍后重试"
-	}
+func writeUpstreamErr(w http.ResponseWriter, err error) {
+	status, message := classifyUpstream(err)
+	writeJSON(w, status, map[string]string{
+		"error":   err.Error(),
+		"message": message,
+	})
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -88,7 +78,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := s.ohg.Search(r.Context(), q)
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		writeUpstreamErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -97,7 +87,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 func (s *Server) discover(w http.ResponseWriter, r *http.Request) {
 	page, err := s.ohg.Discover(r.Context())
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		writeUpstreamErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -107,7 +97,7 @@ func (s *Server) episodes(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	page, err := s.ohg.ListEpisodes(r.Context(), id)
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		writeUpstreamErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -118,7 +108,7 @@ func (s *Server) playback(w http.ResponseWriter, r *http.Request) {
 	pb, err := s.ohg.ResolvePlayback(r.Context(), id)
 	if pb == nil {
 		if err != nil {
-			writeErr(w, http.StatusBadGateway, err.Error())
+			writeUpstreamErr(w, err)
 			return
 		}
 		writeErr(w, http.StatusBadGateway, "empty playback")

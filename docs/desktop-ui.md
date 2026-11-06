@@ -53,3 +53,12 @@
 
 1. `dotnet test apps/desktop/ui.Tests`（侧栏导航、首页网格/502 空态重试、剧场、搜索、播放页中文控件与选集、设置；DaemonClient 中文错误；Windows libmpv 候选路径）
 2. `./scripts/desktop-e2e.sh`（daemon health→discover→search→episodes→playback；libmpv smoke；xvfb Avalonia；zip 含 `libmpv-2.dll`）
+
+
+## 关于「推荐失败 502」
+
+**不是**本地 daemon 挂了，也**不是** UI 连错端口。
+
+复现时 daemon `/health` 正常，Search 常仍 200；真正失败是 openhongguo `Discover` 解析推荐 tab 得到 0 条，返回 `ErrAnonymousLimited`（`anonymous response was empty`）。旧版 daemon 把**所有** ohg 错误一律写成 HTTP 502，UI 再用 `EnsureSuccessStatusCode` 甩出英文 `502 (Bad Gateway)`，造成「网关挂了」的误报。
+
+处理：Discover 空页时 ResetDevice 再试 → Search/NewReleases 降级 → 短时缓存；错误分类不再把空页伪装成 502。
