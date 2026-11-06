@@ -55,4 +55,17 @@ public class DaemonClientTests
             () => client.DiscoverAsync(cts.Token));
     }
 
+
+    [Fact]
+    public async Task Discover_http_timeout_is_chinese_never_english()
+    {
+        await using var fake = new FakeDaemonServer { DiscoverDelayMs = 8_000 };
+        using var client = new DaemonClient(fake.BaseAddress, timeout: TimeSpan.FromSeconds(1));
+        var ex = await Assert.ThrowsAsync<DaemonApiException>(() => client.DiscoverAsync());
+        Assert.Contains("推荐加载超时", ex.Message);
+        Assert.DoesNotContain("HttpClient.Timeout", ex.Message);
+        Assert.DoesNotContain("elapsing", ex.Message);
+        Assert.DoesNotContain("canceled due to", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
 }

@@ -15,10 +15,17 @@ public sealed class DaemonClient : IDisposable
 
     private readonly HttpClient _http;
 
-    public DaemonClient(string baseAddress = "http://127.0.0.1:17890/")
+    private readonly TimeSpan _catalogBudget;
+
+    public DaemonClient(string baseAddress = "http://127.0.0.1:17890/", TimeSpan? timeout = null)
     {
         BaseAddress = baseAddress;
-        _http = new HttpClient { BaseAddress = new Uri(baseAddress), Timeout = TimeSpan.FromSeconds(35) };
+        var httpTimeout = timeout ?? TimeSpan.FromSeconds(28);
+        // Catalog budget stays under HttpClient.Timeout so we map cancel ourselves with Chinese copy.
+        _catalogBudget = httpTimeout <= TimeSpan.FromSeconds(3)
+            ? TimeSpan.FromMilliseconds(Math.Max(200, httpTimeout.TotalMilliseconds - 100))
+            : TimeSpan.FromSeconds(Math.Min(25, Math.Max(1, httpTimeout.TotalSeconds - 3)));
+        _http = new HttpClient { BaseAddress = new Uri(baseAddress), Timeout = httpTimeout };
     }
 
     public string BaseAddress { get; }
@@ -46,16 +53,41 @@ public sealed class DaemonClient : IDisposable
     private async Task<T?> GetCatalogAsync<T>(string path, string op, CancellationToken ct)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        linked.CancelAfter(TimeSpan.FromSeconds(30));
+        linked.CancelAfter(_catalogBudget);
         try
         {
             return await GetAsync<T>(path, op, linked.Token, retries: 2);
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (Exception ex) when (IsTimeout(ex) && !ct.IsCancellationRequested)
         {
-            throw new DaemonApiException($"{op}失败：加载超时，可点重试或用顶栏搜索");
+            throw TimeoutException(op, ex);
         }
     }
+
+    private static bool IsTimeout(Exception ex)
+    {
+        for (Exception? e = ex; e != null; e = e.InnerException)
+        {
+            if (e is TimeoutException) return true;
+            // HttpClient.Timeout surfaces as TaskCanceledException with this English message.
+            var msg = e.Message ?? "";
+            if (msg.Contains("HttpClient.Timeout", StringComparison.OrdinalIgnoreCase)) return true;
+            if (msg.Contains("Timeout of", StringComparison.OrdinalIgnoreCase) &&
+                msg.Contains("elapsing", StringComparison.OrdinalIgnoreCase)) return true;
+            if (e is TaskCanceledException or OperationCanceledException)
+            {
+                // Treat cancel-with-timeout-looking-message as timeout; plain cancel checked by caller.
+                if (msg.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("canceled", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("cancelled", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private static DaemonApiException TimeoutException(string op, Exception? inner = null) =>
+        new($"{op}失败：推荐加载超时，请重试或用顶栏搜索", inner);
 
     public Task<PageResult<EpisodeItem>?> EpisodesAsync(string seriesId, CancellationToken ct = default) =>
         GetAsync<PageResult<EpisodeItem>>($"api/v1/series/{Uri.EscapeDataString(seriesId)}/episodes", "分集", ct);
@@ -113,9 +145,9 @@ public sealed class DaemonClient : IDisposable
                 await EnsureOkAsync(resp, op, ct);
                 return await resp.Content.ReadFromJsonAsync<T>(JsonOpts, ct);
             }
-            catch (OperationCanceledException oce) when (!ct.IsCancellationRequested)
+            catch (Exception ex) when (IsTimeout(ex) && !ct.IsCancellationRequested)
             {
-                throw new DaemonApiException($"{op}失败：请求超时，可点重试或用顶栏搜索", oce);
+                throw TimeoutException(op, ex);
             }
             catch (OperationCanceledException) { throw; }
             catch (DaemonApiException)
