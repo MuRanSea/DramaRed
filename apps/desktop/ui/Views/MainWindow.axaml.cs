@@ -150,8 +150,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            StatusBar.Text = $"daemon：{ex.Message}";
-            SettingsHealth.Text = $"daemon：{ex.Message}";
+            StatusBar.Text = $"本地服务异常：{ex.Message}";
+            SettingsHealth.Text = $"本地服务异常：{ex.Message}";
         }
     }
 
@@ -270,9 +270,9 @@ public partial class MainWindow : Window
             }
             if (_home.Count == 0)
             {
-                HomeHint.Text = "推荐为空";
-                TheaterHint.Text = "剧场为空";
-                HomeEmptyDetail.Text = "上游没有返回剧目，可稍后重试或用顶栏搜索。";
+                HomeHint.Text = "暂时没有推荐内容";
+                TheaterHint.Text = "剧场暂时没有内容";
+                HomeEmptyDetail.Text = "没有拉到剧目。可能是上游暂时没有返回，或本地服务刚启动还未就绪，请点重试或用顶栏搜索。";
                 TheaterEmptyDetail.Text = HomeEmptyDetail.Text;
                 HomeEmpty.IsVisible = true;
                 TheaterEmpty.IsVisible = true;
@@ -810,7 +810,7 @@ public partial class MainWindow : Window
         }
         catch
         {
-            FavoritesHint.Text = "无法读取收藏（daemon 未响应）";
+            FavoritesHint.Text = "无法读取收藏（本地服务未响应）";
         }
     }
 

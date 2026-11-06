@@ -123,7 +123,11 @@
                     <Button Classes="poster" Width="140" Margin="0,0,12,16" Click="OnPosterClick">
                       <StackPanel>
                         <Border Height="190" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
-                          <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                          <Panel>
+                            <TextBlock Text="封面" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Opacity="0.2"/>
+                            <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                          </Panel>
                         </Border>
                         <StackPanel Margin="10,10,10,12" Spacing="3">
                           <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" MaxHeight="42"/>
@@ -164,7 +168,11 @@
                   <Button Classes="poster" Width="140" Margin="0,0,12,16" Click="OnPosterClick">
                     <StackPanel>
                       <Border Height="190" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
-                        <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                        <Panel>
+                          <TextBlock Text="封面" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Opacity="0.2"/>
+                          <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                        </Panel>
                       </Border>
                       <StackPanel Margin="10,10,10,12" Spacing="3">
                         <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" MaxHeight="42"/>
@@ -329,7 +337,11 @@
                   <Button Classes="poster" Width="140" Margin="0,0,12,16" Click="OnPosterClick">
                     <StackPanel>
                       <Border Height="190" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
-                        <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                        <Panel>
+                          <TextBlock Text="封面" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Opacity="0.2"/>
+                          <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                        </Panel>
                       </Border>
                       <StackPanel Margin="10,10,10,12" Spacing="3">
                         <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" MaxHeight="42"/>

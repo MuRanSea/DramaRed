@@ -75,7 +75,7 @@ public sealed class DaemonSupervisor : IDisposable
         }
         catch (Exception ex)
         {
-            LastError = $"无法启动 daemon：{ex.Message}";
+            LastError = $"无法启动本地服务：{ex.Message}";
             return false;
         }
 
@@ -85,14 +85,14 @@ public sealed class DaemonSupervisor : IDisposable
             ct.ThrowIfCancellationRequested();
             if (_process is { HasExited: true })
             {
-                LastError = $"daemon 启动后立即退出（exit={_process.ExitCode}）";
+                LastError = $"本地服务启动后立即退出（exit={_process.ExitCode}）";
                 return false;
             }
             if (await client.HealthAsync(ct)) return true;
             await Task.Delay(250, ct);
         }
 
-        LastError = "daemon 已启动但健康检查超时";
+        LastError = "本地服务已启动但健康检查超时";
         return await client.HealthAsync(ct);
     }
 
