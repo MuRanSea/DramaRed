@@ -33,6 +33,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /health", s.health)
 	s.mux.HandleFunc("GET /api/v1/search", s.search)
 	s.mux.HandleFunc("GET /api/v1/discover", s.discover)
+	s.mux.HandleFunc("GET /api/v1/series/batch", s.seriesBatch)
 	s.mux.HandleFunc("GET /api/v1/series/{id}/episodes", s.episodes)
 	s.mux.HandleFunc("GET /api/v1/episodes/{id}/playback", s.playback)
 	s.mux.HandleFunc("GET /api/v1/history", s.historyList)
@@ -97,6 +98,34 @@ func (s *Server) discover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
+}
+
+func (s *Server) seriesBatch(w http.ResponseWriter, r *http.Request) {
+	raw := strings.TrimSpace(r.URL.Query().Get("ids"))
+	if raw == "" {
+		writeErr(w, http.StatusBadRequest, "missing ids")
+		return
+	}
+	parts := strings.Split(raw, ",")
+	ids := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			ids = append(ids, p)
+		}
+	}
+	if len(ids) == 0 {
+		writeErr(w, http.StatusBadRequest, "missing ids")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+	defer cancel()
+	items, err := s.ohg.GetSeriesBatch(ctx, ids)
+	if err != nil {
+		writeUpstreamErr(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items, "has_more": false})
 }
 
 func (s *Server) episodes(w http.ResponseWriter, r *http.Request) {

@@ -99,7 +99,11 @@ public static class CoverLoader
             };
             using var proc = Process.Start(psi);
             if (proc == null) return null;
+            // Drain redirected pipes or a chatty ffmpeg can fill the buffer and deadlock WaitForExit.
+            var stdoutTask = proc.StandardOutput.ReadToEndAsync(ct);
+            var stderrTask = proc.StandardError.ReadToEndAsync(ct);
             await proc.WaitForExitAsync(ct);
+            try { await Task.WhenAll(stdoutTask, stderrTask); } catch { /* ignore */ }
             if (proc.ExitCode != 0 || !File.Exists(dst)) return null;
             await using var fs = File.OpenRead(dst);
             return new Bitmap(fs);

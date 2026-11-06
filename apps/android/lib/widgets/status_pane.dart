@@ -53,9 +53,15 @@ class StatusPane extends StatelessWidget {
   final IconData icon;
   final bool light;
 
+  /// User-facing playback failure — never leaks ClearKey / DRM jargon.
+  static const playFailedFriendly = '暂时无法播放，请换一集或稍后重试';
+
   static String friendlyError(Object? error) {
     final raw = '$error';
     final low = raw.toLowerCase();
+    if (_looksLikeDrmJargon(low) || raw.contains('受保护')) {
+      return playFailedFriendly;
+    }
     if (low.contains('socket') || low.contains('network') || low.contains('failed host')) {
       return '网络不通，请检查连接后重试';
     }
@@ -77,6 +83,29 @@ class StatusPane extends StatelessWidget {
       return '出了点问题，请重试';
     }
     return oneLine;
+  }
+
+  static bool _looksLikeDrmJargon(String low) {
+    return low.contains('clearkey') ||
+        low.contains('decryption_key') ||
+        low.contains('decryption') ||
+        low.contains('drm') ||
+        low.contains('protected stream') ||
+        low.contains('cenc');
+  }
+
+  /// Map player status / exceptions to silent UX copy (PR #25 follow-up).
+  static String friendlyPlaybackStatus(String? statusOrError) {
+    final raw = (statusOrError ?? '').trim();
+    if (raw.isEmpty) return playFailedFriendly;
+    final low = raw.toLowerCase();
+    if (_looksLikeDrmJargon(low) ||
+        raw.contains('受保护') ||
+        raw.contains('ClearKey') ||
+        raw.contains('解密')) {
+      return playFailedFriendly;
+    }
+    return raw;
   }
 
   @override

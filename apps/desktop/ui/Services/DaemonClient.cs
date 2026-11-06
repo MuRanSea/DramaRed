@@ -92,6 +92,18 @@ public sealed class DaemonClient : IDisposable
     public Task<PageResult<EpisodeItem>?> EpisodesAsync(string seriesId, CancellationToken ct = default) =>
         GetAsync<PageResult<EpisodeItem>>($"api/v1/series/{Uri.EscapeDataString(seriesId)}/episodes", "分集", ct);
 
+    /// <summary>Batch-enrich series titles/covers (favorites/history placeholders).</summary>
+    public Task<PageResult<SeriesSummary>?> SeriesBatchAsync(IEnumerable<string> ids, CancellationToken ct = default)
+    {
+        var list = ids.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().Take(20).ToList();
+        if (list.Count == 0)
+        {
+            return Task.FromResult<PageResult<SeriesSummary>?>(new PageResult<SeriesSummary>());
+        }
+        var q = string.Join(",", list.Select(Uri.EscapeDataString));
+        return GetAsync<PageResult<SeriesSummary>>($"api/v1/series/batch?ids={q}", "剧目详情", ct, retries: 1);
+    }
+
     public Task<PlaybackResponse?> PlaybackAsync(string episodeId, CancellationToken ct = default) =>
         GetAsync<PlaybackResponse>($"api/v1/episodes/{Uri.EscapeDataString(episodeId)}/playback", "播放地址", ct);
 

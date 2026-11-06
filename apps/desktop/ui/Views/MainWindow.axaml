@@ -21,7 +21,6 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
           <Button Content="隐藏继续听" Click="OnHideToTray" ToolTip.Tip="Ctrl+H · 窗口隐藏，音频继续"/>
           <Button Content="刷新" Click="OnRefreshHome" ToolTip.Tip="重新加载推荐"/>
-          <Button Content="设置" Click="OnAbout"/>
         </StackPanel>
       </Grid>
     </Border>
@@ -151,7 +150,8 @@
             <TextBlock Classes="pageTitle" Text="搜索"/>
             <TextBlock Name="SearchHint" Classes="muted" Text="在顶栏输入关键词后回车，或点搜索。"/>
           </StackPanel>
-          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <Panel>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled" Name="SearchScroll">
             <ItemsControl Name="SearchGrid">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -179,6 +179,16 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
+            <Border Name="SearchEmpty" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#FF1C1C1F" CornerRadius="14" Padding="28,22" MaxWidth="420">
+              <StackPanel Spacing="10">
+                <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Text="没有找到相关短剧"/>
+                <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                           Text="换个词试试，或去推荐 / 剧场逛逛。"/>
+                <Button Classes="accent" HorizontalAlignment="Center" Content="换个词试试" Click="OnFocusSearch"/>
+              </StackPanel>
+            </Border>
+          </Panel>
         </DockPanel>
 
         <!-- Player -->
@@ -320,7 +330,8 @@
             <TextBlock Classes="pageTitle" Text="收藏"/>
             <TextBlock Name="FavoritesHint" Classes="muted" Text="收藏的短剧会显示在这里。"/>
           </StackPanel>
-          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <Panel>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled" Name="FavoritesScroll">
             <ItemsControl Name="FavoritesGrid">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -348,6 +359,16 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </ScrollViewer>
+            <Border Name="FavoritesEmpty" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#FF1C1C1F" CornerRadius="14" Padding="28,22" MaxWidth="420">
+              <StackPanel Spacing="10">
+                <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Text="还没有收藏"/>
+                <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                           Text="播放页点「收藏」，追剧会出现在这里。"/>
+                <Button Classes="accent" HorizontalAlignment="Center" Content="去推荐选剧" Click="OnGoHome"/>
+              </StackPanel>
+            </Border>
+          </Panel>
         </DockPanel>
 
         <!-- Settings -->
@@ -362,12 +383,10 @@
                 <TextBlock Classes="muted" Text="定时停播（对齐 Android · 不做下载）"/>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <TextBlock VerticalAlignment="Center" Text="定时停"/>
-                  <ComboBox Name="StopAfterBox" Width="120" SelectionChanged="OnStopAfterChanged">
-                    <ComboBoxItem Tag="0" Content="关"/>
-                    <ComboBoxItem Tag="15" Content="15 分"/>
-                    <ComboBoxItem Tag="30" Content="30 分"/>
-                    <ComboBoxItem Tag="60" Content="60 分"/>
-                  </ComboBox>
+                  <Button Name="StopChip0" Classes="chip" Tag="0" Content="关" Click="OnStopAfterChip"/>
+                  <Button Name="StopChip15" Classes="chip" Tag="15" Content="15 分" Click="OnStopAfterChip"/>
+                  <Button Name="StopChip30" Classes="chip" Tag="30" Content="30 分" Click="OnStopAfterChip"/>
+                  <Button Name="StopChip60" Classes="chip" Tag="60" Content="60 分" Click="OnStopAfterChip"/>
                 </StackPanel>
                 <TextBlock Name="TimerSettingsHint" Classes="muted" Text="当前：关"/>
                 <CheckBox Name="SettingsAutoNextBox" IsChecked="True" Content="自动连播下一集"
