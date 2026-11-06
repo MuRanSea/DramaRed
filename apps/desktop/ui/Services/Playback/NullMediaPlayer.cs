@@ -26,4 +26,6 @@ public sealed class NullMediaPlayer : IMediaPlayer
     public Task<TimeSpan> GetPositionAsync(CancellationToken ct = default) => Task.FromResult(TimeSpan.Zero);
 
     public void Dispose() { }
+
+    public void SetVideoWindowVisible(bool visible) { }
 }

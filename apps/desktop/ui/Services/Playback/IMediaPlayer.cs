@@ -23,4 +23,7 @@ public interface IMediaPlayer : IDisposable
     Task SeekByAsync(TimeSpan delta, CancellationToken ct = default);
     Task ToggleMuteAsync(CancellationToken ct = default);
     Task<TimeSpan> GetPositionAsync(CancellationToken ct = default);
+
+    /// <summary>Show or hide the external libmpv video window (browse pages must not be covered).</summary>
+    void SetVideoWindowVisible(bool visible);
 }

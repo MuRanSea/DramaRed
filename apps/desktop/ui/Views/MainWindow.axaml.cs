@@ -91,6 +91,13 @@ public partial class MainWindow : Window
             await RefreshDiscoverAsync();
             await RefreshHistoryAsync();
             await RefreshFavoritesAsync();
+            var autoQ = Environment.GetEnvironmentVariable("DRAMARED_AUTO_SEARCH");
+            if (!string.IsNullOrWhiteSpace(autoQ))
+            {
+                TestSetSearchText(autoQ);
+                await TestRunSearchAsync();
+                ShowPage("search");
+            }
         };
     }
 
@@ -170,6 +177,9 @@ public partial class MainWindow : Window
         PageHistory.IsVisible = page == "history";
         PageFavorites.IsVisible = page == "favorites";
         PageSettings.IsVisible = page == "settings";
+
+        // External mpv window must not cover browse pages.
+        _player.SetVideoWindowVisible(page == "player");
 
         SelectNavSilently(page);
     }
@@ -862,6 +872,8 @@ public partial class MainWindow : Window
 
     private void OnHideToTray(object? sender, RoutedEventArgs e)
     {
+        // 后台继续听：收起外接画面，音频不停。
+        _player.SetVideoWindowVisible(false);
         if (_tray == null)
         {
             StatusBar.Text = "当前环境无托盘支持；改为仅隐藏窗口（音频继续）";
@@ -885,6 +897,7 @@ public partial class MainWindow : Window
         Show();
         Activate();
         if (_tray != null) _tray.IsVisible = false;
+        _player.SetVideoWindowVisible(_currentPage == "player");
     }
 
     protected override async void OnClosed(EventArgs e)

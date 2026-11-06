@@ -66,6 +66,7 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
     private readonly MpvGetProperty _mpvGetProperty;
     private readonly MpvFree _mpvFree;
     private readonly MpvWaitEvent _mpvWaitEvent;
+    private bool _hasDisplay;
 
     private LibMpvMediaPlayer(string libraryPath, IntPtr lib)
     {
@@ -96,14 +97,17 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
             || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
         if (hasDisplay)
         {
-            // External window (issue #8 accepts 外接窗口).
-            _ = _mpvSetOptionString(_ctx, "force-window", "yes");
+            // External window only once media is loaded — avoid idle "Drop files..."
+            // overlay covering Avalonia browse pages at startup.
+            _ = _mpvSetOptionString(_ctx, "force-window", "no");
             _ = _mpvSetOptionString(_ctx, "keep-open", "yes");
+            _hasDisplay = true;
         }
         else
         {
             _ = _mpvSetOptionString(_ctx, "vo", "null");
             _ = _mpvSetOptionString(_ctx, "force-window", "no");
+            _hasDisplay = false;
         }
 
         _ = _mpvSetOptionString(_ctx, "osc", "yes");
@@ -206,6 +210,13 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
                 _ = _mpvSetOptionString(_ctx, "demuxer-lavf-o", $"decryption_key={contentKeyHex}");
             }
 
+            if (_hasDisplay)
+            {
+                SetPropertyString("force-window", "yes");
+                SetPropertyString("window-minimized", "no");
+                SetPropertyString("geometry", "360x640+1400+40");
+                SetPropertyString("ontop", "no");
+            }
             SetPropertyString("pause", "no");
             SetPropertyString("speed", _rate.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
 
@@ -242,6 +253,12 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
         {
             EnsureAlive();
             _ = _mpvCommandString(_ctx, "stop");
+            if (_hasDisplay)
+            {
+                // Hide idle external window so it does not cover browse pages.
+                SetPropertyString("window-minimized", "yes");
+                SetPropertyString("force-window", "no");
+            }
         }
         return Task.CompletedTask;
     }
@@ -268,6 +285,37 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
         }
         return Task.CompletedTask;
     }
+
+
+    public void SetVideoWindowVisible(bool visible)
+    {
+        if (!_hasDisplay) return;
+        lock (_gate)
+        {
+            if (_ctx == IntPtr.Zero) return;
+            if (visible)
+            {
+                SetPropertyString("force-window", "yes");
+                SetPropertyString("window-minimized", "no");
+                // Place beside the Avalonia shell rather than dead-center over it.
+                SetPropertyString("geometry", "360x640+1400+40");
+                SetPropertyString("ontop", "no");
+                // Restore video plane if previously muted for browse pages.
+                SetPropertyString("vid", "auto");
+            }
+            else
+            {
+                // Xvfb / no WM: window-minimized alone may still paint; park off-screen
+                // and drop the video track so the external window stops covering the shell.
+                SetPropertyString("vid", "no");
+                SetPropertyString("geometry", "1x1+9000+9000");
+                SetPropertyString("window-minimized", "yes");
+                SetPropertyString("force-window", "no");
+                try { _ = _mpvCommandString(_ctx, "set window-scale 0.01"); } catch { /* optional */ }
+            }
+        }
+    }
+
 
     public Task SeekAsync(TimeSpan position, CancellationToken ct = default)
     {

@@ -26,6 +26,7 @@ class DramaRedApp extends StatelessWidget {
     return MaterialApp(
       title: 'DramaRed',
       theme: AppTheme.dark,
+      debugShowCheckedModeBanner: false,
       home: smoke == null
           ? const RootShell()
           : SmokePage(
