@@ -11,9 +11,11 @@ namespace DramaRed.UI.Views;
 
 public partial class MainWindow : Window
 {
-    private readonly DaemonClient _daemon = new();
-    private readonly DaemonSupervisor _supervisor = new();
-    private readonly MpvPlayerHost _player = new();
+    private readonly DaemonClient _daemon;
+    private readonly DaemonSupervisor _supervisor;
+    private readonly MpvPlayerHost _player;
+    private readonly bool _ownsDaemon;
+    private readonly bool _autoBootstrap;
     private readonly Dictionary<string, SeriesSummary> _seriesCache = new();
     private readonly Dictionary<string, PlaybackResponse> _playbackCache = new();
     private readonly ObservableCollection<PosterItem> _home = new();
@@ -38,7 +40,24 @@ public partial class MainWindow : Window
     private TrayIcon? _tray;
 
     public MainWindow()
+        : this(new DaemonClient(), new DaemonSupervisor(), new MpvPlayerHost(), ownsDaemon: true, autoBootstrap: true)
     {
+    }
+
+    /// <summary>Test / DI constructor. Set <paramref name="autoBootstrap"/> false to skip Opened network calls.</summary>
+    internal MainWindow(
+        DaemonClient daemon,
+        DaemonSupervisor? supervisor = null,
+        MpvPlayerHost? player = null,
+        bool ownsDaemon = false,
+        bool autoBootstrap = false)
+    {
+        _daemon = daemon;
+        _supervisor = supervisor ?? new DaemonSupervisor();
+        _player = player ?? new MpvPlayerHost();
+        _ownsDaemon = ownsDaemon;
+        _autoBootstrap = autoBootstrap;
+
         InitializeComponent();
         RateBox.SelectedIndex = 1;
         StopAfterBox.SelectedIndex = 0;
@@ -67,12 +86,24 @@ public partial class MainWindow : Window
         InitTray();
         Opened += async (_, _) =>
         {
+            if (!_autoBootstrap) return;
             await EnsureDaemonAsync();
             await RefreshDiscoverAsync();
             await RefreshHistoryAsync();
             await RefreshFavoritesAsync();
         };
     }
+
+    internal string CurrentPage => _currentPage;
+    internal int HomeCount => _home.Count;
+    internal int TheaterCount => _theater.Count;
+    internal int SearchCount => _search.Count;
+    internal int EpisodeCount => _episodes.Count;
+    internal Task TestRefreshDiscoverAsync() => RefreshDiscoverAsync();
+    internal Task TestRunSearchAsync() => RunSearchAsync();
+    internal Task TestOpenSeriesAsync(SeriesSummary series) => OpenSeriesAsync(series, autoPlay: false);
+    internal void TestShowPage(string page) => ShowPage(page);
+    internal void TestSetSearchText(string q) => SearchBox.Text = q;
 
     private void InitTray()
     {
@@ -848,7 +879,7 @@ public partial class MainWindow : Window
         _player.PlaybackEnded -= OnPlaybackEnded;
         _player.Dispose();
         _supervisor.Dispose();
-        _daemon.Dispose();
+        if (_ownsDaemon) _daemon.Dispose();
         _tray?.Dispose();
         base.OnClosed(e);
     }

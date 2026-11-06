@@ -96,3 +96,14 @@ dotnet run -c Release
 - 需要 .NET 运行时？本脚本默认 `--self-contained true`，不需要另装。
 - 要看到画面：把 `libmpv-2.dll`（以及其依赖）放到 exe 旁；没有 DLL 时仍可浏览、搜索，播放会提示缺少后端。
 - 不要把 daemon 端口暴露到公网。
+
+
+## 测试
+
+```bash
+# Headless UI + 单元（Avalonia.Headless.XUnit）
+dotnet test apps/desktop/ui.Tests/DramaRed.UI.Tests.csproj -c Release
+
+# 全链路 e2e：上述测试 + daemon API + xvfb GUI + Windows zip/libmpv 静态检查
+./scripts/desktop-e2e.sh
+```

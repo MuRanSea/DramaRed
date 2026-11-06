@@ -45,3 +45,11 @@
 - Windows 包捆绑官方 LGPL `libmpv-2.dll`；播放页状态全中文。
 - 修复 Windows 上因缺少 `DISPLAY` 而强制 `vo=null` 的问题（有 DLL 也会只出声）。
 - 播放页空态引导、选集芯片、侧栏卡片式布局，减少大片死黑空。
+
+
+## 测试门槛（v0.2.1+）
+
+发 Windows 包前必须本地跑通：
+
+1. `dotnet test apps/desktop/ui.Tests`（侧栏导航、首页网格/502 空态重试、剧场、搜索、播放页中文控件与选集、设置；DaemonClient 中文错误；Windows libmpv 候选路径）
+2. `./scripts/desktop-e2e.sh`（daemon health→discover→search→episodes→playback；libmpv smoke；xvfb Avalonia；zip 含 `libmpv-2.dll`）

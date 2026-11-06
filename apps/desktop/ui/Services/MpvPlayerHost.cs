@@ -23,6 +23,14 @@ public sealed class MpvPlayerHost : IDisposable
         }
     }
 
+    /// <summary>Test / DI constructor — avoids loading native libmpv in headless UI tests.</summary>
+    internal MpvPlayerHost(IMediaPlayer player, string backendDetail, bool isNullBackend)
+    {
+        _player = player;
+        BackendDetail = backendDetail;
+        IsNullBackend = isNullBackend;
+    }
+
     public bool AutoNext { get => _player.AutoNext; set => _player.AutoNext = value; }
     public double Rate { get => _player.Rate; set => _player.Rate = value; }
     public TimeSpan? StopAfter { get => _player.StopAfter; set => _player.StopAfter = value; }

@@ -151,7 +151,15 @@ public sealed class LibMpvMediaPlayer : IMediaPlayer
         return false;
     }
 
-    private static IEnumerable<string> CandidateLibraries()
+    internal static IEnumerable<string> WindowsCandidateLibraries(string baseDir)
+    {
+        yield return Path.Combine(baseDir, "libmpv-2.dll");
+        yield return Path.Combine(baseDir, "mpv-2.dll");
+        yield return "libmpv-2.dll";
+        yield return "mpv-2.dll";
+    }
+
+    internal static IEnumerable<string> CandidateLibraries()
     {
         if (OperatingSystem.IsLinux())
         {
