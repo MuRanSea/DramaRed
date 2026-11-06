@@ -25,10 +25,25 @@ public sealed class EpisodeItem
     [JsonPropertyName("title")] public string Title { get; set; } = "";
     [JsonPropertyName("playable")] public bool Playable { get; set; }
 
-    public string ListLabel =>
-        string.IsNullOrWhiteSpace(Title) ? $"第 {Number} 集" : $"第 {Number} 集 · {Title}";
+    public string ListLabel
+    {
+        get
+        {
+            var num = Number > 0 ? $"第 {Number} 集" : "";
+            var title = (Title ?? "").Trim();
+            if (string.IsNullOrEmpty(title))
+                return string.IsNullOrEmpty(num) ? Id : num;
+            // Upstream often sets Title to "第N集" / "第 N 集" — never double it.
+            if (LooksLikeEpisodeNumberTitle(title))
+                return string.IsNullOrEmpty(num) ? title : num;
+            return string.IsNullOrEmpty(num) ? title : $"{num} · {title}";
+        }
+    }
 
     public string ChipLabel => Number > 0 ? $"第 {Number} 集" : (string.IsNullOrWhiteSpace(Title) ? Id : Title);
+
+    private static bool LooksLikeEpisodeNumberTitle(string title) =>
+        System.Text.RegularExpressions.Regex.IsMatch(title, @"^第\s*\d+\s*集$");
 }
 
 public sealed class PageResult<T>

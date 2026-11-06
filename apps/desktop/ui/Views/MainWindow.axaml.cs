@@ -37,6 +37,8 @@ public partial class MainWindow : Window
     private DispatcherTimer? _stopTimer;
     private DispatcherTimer? _progressTimer;
     private DateTimeOffset? _stopDeadline;
+    private int _stopMinutes;
+    private bool _stopApplying;
     private TrayIcon? _tray;
     private CancellationTokenSource? _discoverCts;
 
@@ -61,7 +63,7 @@ public partial class MainWindow : Window
 
         InitializeComponent();
         RateBox.SelectedIndex = 1;
-        StopAfterBox.SelectedIndex = 0;
+        HighlightStopChip(0);
         HomeGrid.ItemsSource = _home;
         TheaterGrid.ItemsSource = _theater;
         SearchGrid.ItemsSource = _search;
@@ -183,6 +185,28 @@ public partial class MainWindow : Window
         _player.SetVideoWindowVisible(page == "player");
 
         SelectNavSilently(page);
+        UpdateStatusBarForPage(page);
+    }
+
+    private void UpdateStatusBarForPage(string page)
+    {
+        StatusBar.Text = page switch
+        {
+            "home" => HomeHint?.Text ?? (_home.Count == 0 ? "推荐" : $"共 {_home.Count} 部"),
+            "theater" => TheaterHint?.Text ?? (_theater.Count == 0 ? "剧场" : $"共 {_theater.Count} 部"),
+            "search" => SearchHint?.Text ?? "搜索",
+            "history" => HistoryHint?.Text ?? (_history.Count == 0 ? "历史" : $"共 {_history.Count} 条"),
+            "favorites" => FavoritesHint?.Text ?? (_favorites.Count == 0 ? "收藏" : $"共 {_favorites.Count} 部"),
+            "player" => PlayerStatus?.Text ?? "播放",
+            "settings" => SettingsHealth?.Text ?? "设置",
+            _ => StatusBar.Text,
+        };
+    }
+
+    private void OnFocusSearch(object? sender, RoutedEventArgs e)
+    {
+        ShowPage("search");
+        SearchBox?.Focus();
     }
 
     private void SelectNavSilently(string page)
@@ -222,6 +246,7 @@ public partial class MainWindow : Window
         }
 
         SearchHint.Text = "搜索中…";
+        if (SearchEmpty != null) SearchEmpty.IsVisible = false;
         try
         {
             var page = await _daemon.SearchAsync(q);
@@ -233,12 +258,25 @@ public partial class MainWindow : Window
                 _search.Add(poster);
                 _ = LoadCoverAsync(poster);
             }
-            SearchHint.Text = _search.Count == 0 ? "无结果" : $"搜索到 {_search.Count} 部";
+            // Honest count: SDK may return weak/unrelated hits for nonsense queries —
+            // still show them. Only Count==0 gets the empty card.
+            if (_search.Count == 0)
+            {
+                SearchHint.Text = "没有找到相关短剧";
+                if (SearchEmpty != null) SearchEmpty.IsVisible = true;
+            }
+            else
+            {
+                SearchHint.Text = $"搜索到 {_search.Count} 部";
+                if (SearchEmpty != null) SearchEmpty.IsVisible = false;
+            }
+            StatusBar.Text = SearchHint.Text;
         }
         catch (Exception ex)
         {
             SearchHint.Text = FriendlyError(ex);
             StatusBar.Text = SearchHint.Text;
+            if (SearchEmpty != null) SearchEmpty.IsVisible = false;
         }
     }
 
@@ -340,7 +378,19 @@ public partial class MainWindow : Window
                 return "推荐加载超时，请重试或用顶栏搜索";
             }
         }
-        return $"操作失败：{ex.Message}";
+        if (ex is ArgumentOutOfRangeException or IndexOutOfRangeException ||
+            (ex.Message?.Contains("Index was out of range", StringComparison.OrdinalIgnoreCase) == true))
+        {
+            return "操作失败：切换失败，请重试";
+        }
+        // Strip English framework noise; keep a short Chinese wrapper.
+        var raw = ex.Message ?? "";
+        if (raw.Contains("Parameter", StringComparison.OrdinalIgnoreCase) ||
+            raw.Contains("out of range", StringComparison.OrdinalIgnoreCase))
+        {
+            return "操作失败：切换失败，请重试";
+        }
+        return $"操作失败：{raw}";
     }
 
     private static string HumanBackend(string detail, bool isNull)
@@ -519,31 +569,45 @@ public partial class MainWindow : Window
 
     private void FillQualityBox()
     {
+        if (QualityBox is null) return;
         _qualityApplying = true;
         try
         {
-            QualityBox.Items.Clear();
-            QualityBox.Items.Add(new ComboBoxItem { Content = "自动", Tag = "自动" });
+            // Rebuild via ItemsSource so we never Clear/index the live ItemCollection
+            // while SelectionChanged is still unwinding (that threw IndexOutOfRange).
+            var items = new List<ComboBoxItem>
+            {
+                new() { Content = "自动", Tag = "自动" },
+            };
             foreach (var stream in _streams)
             {
                 var label = PlaybackPlanner.LabelOf(stream);
-                QualityBox.Items.Add(new ComboBoxItem { Content = label, Tag = label });
+                items.Add(new ComboBoxItem { Content = label, Tag = label });
             }
+
+            QualityBox.ItemsSource = items;
 
             var idx = 0;
             if (!string.Equals(_preferredQuality, "自动", StringComparison.OrdinalIgnoreCase))
             {
-                for (var i = 0; i < QualityBox.Items.Count; i++)
+                for (var i = 0; i < items.Count; i++)
                 {
-                    if (QualityBox.Items[i] is ComboBoxItem item &&
-                        string.Equals(item.Tag?.ToString(), _preferredQuality, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(items[i].Tag?.ToString(), _preferredQuality, StringComparison.OrdinalIgnoreCase))
                     {
                         idx = i;
                         break;
                     }
                 }
             }
-            QualityBox.SelectedIndex = idx;
+            if (idx >= 0 && idx < items.Count)
+            {
+                QualityBox.SelectedIndex = idx;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Never let quality box rebuild crash playback.
+            System.Diagnostics.Debug.WriteLine($"FillQualityBox: {ex}");
         }
         finally
         {
@@ -551,17 +615,35 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnQualityChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnQualityChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_qualityApplying || QualityBox?.SelectedItem is not ComboBoxItem item) return;
         var next = item.Tag?.ToString() ?? "自动";
         if (string.Equals(next, _preferredQuality, StringComparison.Ordinal)) return;
         _preferredQuality = next;
-        if (_currentEpisode != null)
+        var ep = _currentEpisode;
+        if (ep == null) return;
+        // Defer out of SelectionChanged — mutating Items/SelectedIndex re-entrantly
+        // caused ArgumentOutOfRangeException (Parameter 'index') on Linux Avalonia.
+        Dispatcher.UIThread.Post(() => _ = SwitchQualityAsync(ep));
+    }
+
+    private async Task SwitchQualityAsync(EpisodeItem ep)
+    {
+        try
         {
-            var pos = TimeSpan.Zero;
-            try { pos = await _player.GetPositionAsync(); } catch { /* ignore */ }
-            await PlayEpisodeAsync(_currentEpisode, (long)pos.TotalMilliseconds);
+            long seekMs = 0;
+            try { seekMs = (long)(await _player.GetPositionAsync()).TotalMilliseconds; }
+            catch { /* ignore */ }
+            await PlayEpisodeAsync(ep, seekMs);
+        }
+        catch (Exception ex)
+        {
+            var msg = FriendlyError(ex);
+            if (msg.Contains("推荐加载超时", StringComparison.Ordinal))
+                msg = "清晰度切换失败，请重试";
+            PlayerStatus.Text = msg;
+            StatusBar.Text = msg;
         }
     }
 
@@ -708,12 +790,22 @@ public partial class MainWindow : Window
         AutoNextBox.IsChecked = SettingsAutoNextBox.IsChecked;
     }
 
-    private void OnStopAfterChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnStopAfterChip(object? sender, RoutedEventArgs e)
     {
-        if (StopAfterBox is null) return;
+        if (_stopApplying) return;
+        if (sender is not Control { Tag: not null } ctrl) return;
+        if (!int.TryParse(ctrl.Tag.ToString(), out var minutes)) return;
+        ApplyStopAfter(minutes);
+    }
+
+    private void ApplyStopAfter(int minutes)
+    {
         _stopTimer?.Stop();
-        if (StopAfterBox.SelectedItem is not ComboBoxItem item ||
-            !int.TryParse(item.Tag?.ToString(), out var minutes) || minutes <= 0)
+        _stopTimer = null;
+        _stopMinutes = minutes;
+        HighlightStopChip(minutes);
+
+        if (minutes <= 0)
         {
             _stopDeadline = null;
             _player.StopAfter = null;
@@ -727,25 +819,58 @@ public partial class MainWindow : Window
         if (TimerHint is not null) TimerHint.Text = $"定时停播：{minutes} 分钟后暂停（设置可改）";
         _stopDeadline = DateTimeOffset.Now.AddMinutes(minutes);
         _stopTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _stopTimer.Tick += async (_, _) =>
-        {
-            if (_stopDeadline is null) return;
-            var left = _stopDeadline.Value - DateTimeOffset.Now;
-            if (left <= TimeSpan.Zero)
-            {
-                _stopTimer.Stop();
-                await _player.PauseAsync();
-                _paused = true;
-                TimerHint.Text = "定时停止已触发";
-                PlayerStatus.Text = "定时停止已触发";
-                StopAfterBox.SelectedIndex = 0;
-            }
-            else
-            {
-                TimerHint.Text = $"定时停止倒计时 {left.Minutes:00}:{left.Seconds % 60:00}";
-            }
-        };
+        // Sync Tick — never async void on DispatcherTimer (can freeze Avalonia input).
+        _stopTimer.Tick += OnStopTimerTick;
         _stopTimer.Start();
+    }
+
+    private void OnStopTimerTick(object? sender, EventArgs e)
+    {
+        if (_stopDeadline is null) return;
+        var left = _stopDeadline.Value - DateTimeOffset.Now;
+        if (left <= TimeSpan.Zero)
+        {
+            _stopTimer?.Stop();
+            _stopTimer = null;
+            _stopDeadline = null;
+            Dispatcher.UIThread.Post(() => _ = FinishStopTimerAsync());
+            return;
+        }
+
+        var mm = (int)left.TotalMinutes;
+        var ss = left.Seconds;
+        if (TimerHint is not null)
+            TimerHint.Text = $"定时停止倒计时 {mm:00}:{ss:00}";
+    }
+
+    private async Task FinishStopTimerAsync()
+    {
+        try { await _player.PauseAsync(); } catch { /* ignore */ }
+        _paused = true;
+        if (TimerHint is not null) TimerHint.Text = "定时停止已触发";
+        if (PlayerStatus is not null) PlayerStatus.Text = "定时停止已触发";
+        _stopApplying = true;
+        try
+        {
+            ApplyStopAfter(0);
+            if (TimerHint is not null) TimerHint.Text = "定时停止已触发";
+        }
+        finally
+        {
+            _stopApplying = false;
+        }
+    }
+
+    private void HighlightStopChip(int minutes)
+    {
+        foreach (var (chip, tag) in new (Button?, int)[]
+                 {
+                     (StopChip0, 0), (StopChip15, 15), (StopChip30, 30), (StopChip60, 60),
+                 })
+        {
+            if (chip is null) continue;
+            chip.Classes.Set("accent", tag == minutes);
+        }
     }
 
     private async void OnFavoriteToggle(object? sender, RoutedEventArgs e)
@@ -804,8 +929,10 @@ public partial class MainWindow : Window
         try
         {
             var page = await _daemon.HistoryListAsync();
+            var items = page?.Items?.ToList() ?? new List<HistoryItem>();
+            await EnrichSeriesAsync(items.Select(h => h.SeriesId));
             _history.Clear();
-            foreach (var h in page?.Items ?? Enumerable.Empty<HistoryItem>())
+            foreach (var h in items)
             {
                 _seriesCache.TryGetValue(h.SeriesId, out var series);
                 string? epLabel = null;
@@ -824,6 +951,7 @@ public partial class MainWindow : Window
                     ? "还没有记录"
                     : $"共 {_history.Count} 条 · 双击续播";
             }
+            if (_currentPage == "history") UpdateStatusBarForPage("history");
         }
         catch
         {
@@ -838,7 +966,9 @@ public partial class MainWindow : Window
             var page = await _daemon.FavoritesListAsync();
             _favorites.Clear();
             var ids = page?.SeriesIds ?? new List<string>();
+            await EnrichSeriesAsync(ids);
             FavoritesHint.Text = ids.Count == 0 ? "还没有收藏" : $"共 {ids.Count} 部";
+            if (FavoritesEmpty != null) FavoritesEmpty.IsVisible = ids.Count == 0;
             foreach (var id in ids)
             {
                 if (!_seriesCache.TryGetValue(id, out var series))
@@ -849,10 +979,41 @@ public partial class MainWindow : Window
                 _favorites.Add(poster);
                 _ = LoadCoverAsync(poster);
             }
+            if (_currentPage == "favorites") UpdateStatusBarForPage("favorites");
         }
         catch
         {
             FavoritesHint.Text = "无法读取收藏（本地服务未响应）";
+            if (FavoritesEmpty != null) FavoritesEmpty.IsVisible = _favorites.Count == 0;
+        }
+    }
+
+    private static bool NeedsEnrichment(SeriesSummary? series) =>
+        series == null ||
+        string.IsNullOrWhiteSpace(series.Title) ||
+        series.Title == series.Id ||
+        string.IsNullOrWhiteSpace(series.CoverUrl);
+
+    private async Task EnrichSeriesAsync(IEnumerable<string> ids)
+    {
+        var need = ids
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .Where(id => !_seriesCache.TryGetValue(id, out var s) || NeedsEnrichment(s))
+            .Take(20)
+            .ToList();
+        if (need.Count == 0) return;
+        try
+        {
+            var page = await _daemon.SeriesBatchAsync(need);
+            foreach (var s in page?.Items ?? Enumerable.Empty<SeriesSummary>())
+            {
+                Remember(s);
+            }
+        }
+        catch
+        {
+            // Enrichment is best-effort; keep id placeholders.
         }
     }
 

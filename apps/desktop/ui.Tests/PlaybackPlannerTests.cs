@@ -39,3 +39,20 @@ public class PlaybackPlannerTests
         Assert.Null(PlaybackPlanner.Next(eps, "missing"));
     }
 }
+
+public class EpisodeLabelTests
+{
+    [Fact]
+    public void ListLabel_does_not_double_episode_number_title()
+    {
+        var ep = new EpisodeItem { Id = "e1", Number = 1, Title = "第1集" };
+        Assert.Equal("第 1 集", ep.ListLabel);
+        Assert.Equal("第 1 集", ep.ChipLabel);
+
+        var spaced = new EpisodeItem { Id = "e2", Number = 56, Title = "第 56 集" };
+        Assert.Equal("第 56 集", spaced.ListLabel);
+
+        var named = new EpisodeItem { Id = "e3", Number = 2, Title = "转折" };
+        Assert.Equal("第 2 集 · 转折", named.ListLabel);
+    }
+}

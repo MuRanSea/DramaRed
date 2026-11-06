@@ -67,6 +67,7 @@ public class FeatureScreenshotTests
             new Avalonia.PixelSize(w, h),
             new Avalonia.Vector(96, 96));
         bmp.Render(window);
+        Directory.CreateDirectory(OutDir);
         var path = Path.Combine(OutDir, name + ".png");
         bmp.Save(path);
         Assert.True(File.Exists(path) && new FileInfo(path).Length > 500, path);

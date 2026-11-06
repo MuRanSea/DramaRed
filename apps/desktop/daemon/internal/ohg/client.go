@@ -341,3 +341,38 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string) (*model.
 	}
 	return nil, fmt.Errorf("playback: %w", last)
 }
+
+// GetSeriesBatch loads titles/covers for favorites and history enrichment.
+func (c *Client) GetSeriesBatch(ctx context.Context, ids []string) ([]model.SeriesSummary, error) {
+	if c.inner == nil {
+		return nil, fmt.Errorf("ohg: nil client")
+	}
+	cleaned := make([]string, 0, len(ids))
+	seen := map[string]bool{}
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		cleaned = append(cleaned, id)
+	}
+	if len(cleaned) == 0 {
+		return nil, nil
+	}
+	if len(cleaned) > 20 {
+		cleaned = cleaned[:20]
+	}
+	details, err := c.inner.GetSeriesBatch(ctx, cleaned)
+	if err != nil {
+		return nil, fmt.Errorf("series batch: %w", err)
+	}
+	out := make([]model.SeriesSummary, 0, len(details))
+	for _, d := range details {
+		if d.Series == nil || d.Series.ID == "" {
+			continue
+		}
+		out = append(out, d.Series.SeriesSummary)
+	}
+	return out, nil
+}

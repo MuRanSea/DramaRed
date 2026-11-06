@@ -210,6 +210,81 @@ public class MainWindowUiTests
     }
 
     [AvaloniaFact]
+    public async Task Search_empty_shows_card_when_zero_results()
+    {
+        await using var fake = new FakeDaemonServer { SearchReturnsEmpty = true };
+        using var daemon = new DaemonClient(fake.BaseAddress);
+        var window = CreateWindow(daemon);
+        window.Show();
+        await Pump();
+
+        window.TestSetSearchText("zzzzzqqq");
+        await window.TestRunSearchAsync();
+        await Pump();
+
+        Assert.Equal(0, window.SearchCount);
+        Assert.True(window.SearchEmpty.IsVisible);
+        Assert.Contains("没有找到", window.SearchHint.Text);
+        Assert.Equal(window.SearchHint.Text, window.StatusBar.Text);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Favorites_empty_shows_card_like_history()
+    {
+        await using var fake = new FakeDaemonServer();
+        using var daemon = new DaemonClient(fake.BaseAddress);
+        var window = CreateWindow(daemon);
+        window.Show();
+        await Pump();
+
+        // Force refresh favorites (empty fake)
+        window.TestShowPage("favorites");
+        await Pump();
+        // Opened bootstrap skipped; call refresh via reflection-free path: show page then trigger about? 
+        // Use nav + Ensure by opening favorites after a discover so RefreshFavorites is called from Opened... 
+        // autoBootstrap false — invoke by toggling via public TestShowPage after manually calling discover path.
+        // FavoritesEmpty defaults false until RefreshFavoritesAsync. Call via opening settings? 
+        // Expose nothing — use TestRefreshDiscover then... favorites refresh is only on Opened/favorite toggle.
+        // Call through TestShowPage is not enough. Use internal by searching for method.
+        var mi = typeof(MainWindow).GetMethod("RefreshFavoritesAsync",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(mi);
+        await (Task)mi!.Invoke(window, null)!;
+        await Pump();
+
+        Assert.True(window.FavoritesEmpty.IsVisible);
+        Assert.Contains("还没有收藏", window.FavoritesHint.Text);
+        var cta = window.GetVisualDescendants().OfType<Button>()
+            .FirstOrDefault(b => b.Content?.ToString() == "去推荐选剧");
+        Assert.NotNull(cta);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Top_bar_settings_removed_sidebar_keeps_settings()
+    {
+        await using var fake = new FakeDaemonServer();
+        using var daemon = new DaemonClient(fake.BaseAddress);
+        var window = CreateWindow(daemon);
+        window.Show();
+        await Pump();
+
+        // Top chrome: search actions only — settings lives in the sidebar (desktop-ui.md).
+        var chrome = window.GetVisualDescendants().OfType<Button>()
+            .Select(b => b.Content?.ToString() ?? "")
+            .ToList();
+        Assert.Contains("隐藏继续听", chrome);
+        Assert.Contains("刷新", chrome);
+        Assert.DoesNotContain("设置", chrome);
+        Assert.Contains(window.NavList.Items.OfType<ListBoxItem>(), i => i.Tag?.ToString() == "settings");
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task Top_bar_has_no_stacked_brand()
     {
         await using var fake = new FakeDaemonServer();
