@@ -63,7 +63,7 @@ if [[ -f "${LIBMPV_DIR}/README.txt" ]]; then
 fi
 
 cat > "${OUT}/README.txt" << 'TXT'
-DramaRed Desktop (Windows x64) — v0.2
+DramaRed Desktop (Windows x64) — v0.3.0
 =====================================
 
 1. 解压到任意目录（路径尽量短、少特殊字符）。
