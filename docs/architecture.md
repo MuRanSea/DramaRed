@@ -44,8 +44,8 @@
 ```
 ┌──────────────────┐  HTTP JSON   ┌──────────────────────────┐
 │  Avalonia UI     │ ◄──────────► │  Go daemon (drama-daemon) │
-│  - 列表/搜索/收藏 │  127.0.0.1   │  openhongguo/sdk v0.2.0  │
-│  - 历史/设置     │  :17890      │  + 本地 history/favorites │
+│  - 侧栏/网格/播放│  127.0.0.1   │  openhongguo/sdk v0.2.0  │
+│  - 历史/收藏/设置│  :17890      │  + 本地 history/favorites │
 │  - mpv 外开窗口  │              └──────────────────────────┘
 │        │         │
 │        ▼         │
@@ -73,7 +73,7 @@
 | GET/POST/DELETE | `/api/v1/history` | 播放历史 / 续播 |
 | GET/POST/DELETE | `/api/v1/favorites` | 收藏 |
 
-实现状态：路由与 DTO 已就位；search/discover/episodes/playback 已接 openhongguo；本地 history/favorites 为 JSON 文件；Avalonia UI 已联调（书城/搜索/分集/播放/历史/收藏/倍速/连播/定时停/托盘隐藏）。
+实现状态：路由与 DTO 已就位；search/discover/episodes/playback 已接 openhongguo；本地 history/favorites 为 JSON 文件；Avalonia UI 为桌面侧栏 + 宽屏海报网格 + 9:16 预览播放页（清晰度/倍速/连播/定时停/预加载/托盘隐藏），不复刻手机底栏与竖滑首页。
 
 ### 模块边界
 

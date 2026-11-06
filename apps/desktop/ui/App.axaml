@@ -1,8 +1,84 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="DramaRed.UI.App"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <Color x:Key="SystemAccentColor">#FFFF4D3A</Color>
+    <Color x:Key="SystemAccentColorDark1">#FFE03D2C</Color>
+    <Color x:Key="SystemAccentColorDark2">#FFC42F20</Color>
+    <Color x:Key="SystemAccentColorLight1">#FFFF6B5A</Color>
+    <Color x:Key="SystemAccentColorLight2">#FFFF8A7C</Color>
+    <Color x:Key="HgBg">#FF0C0C0D</Color>
+    <Color x:Key="HgElevated">#FF161618</Color>
+    <Color x:Key="HgNav">#FF111113</Color>
+    <SolidColorBrush x:Key="HgBgBrush" Color="#FF0C0C0D"/>
+    <SolidColorBrush x:Key="HgElevatedBrush" Color="#FF161618"/>
+    <SolidColorBrush x:Key="HgNavBrush" Color="#FF111113"/>
+    <SolidColorBrush x:Key="HgAccentBrush" Color="#FFFF4D3A"/>
+    <SolidColorBrush x:Key="HgMutedBrush" Color="#99FFFFFF"/>
+    <SolidColorBrush x:Key="HgCardBrush" Color="#FF1C1C1F"/>
+  </Application.Resources>
   <Application.Styles>
     <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{StaticResource HgBgBrush}"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+    <Style Selector="ListBox.nav">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem">
+      <Setter Property="Padding" Value="14,10"/>
+      <Setter Property="Margin" Value="8,3"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem:selected">
+      <Setter Property="Background" Value="#33FF4D3A"/>
+      <Setter Property="Foreground" Value="#FFFF6B5A"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.poster">
+      <Setter Property="Background" Value="{StaticResource HgCardBrush}"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="#14FFFFFF"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+    <Style Selector="Button.poster:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FF26262A"/>
+    </Style>
+    <Style Selector="Button.accent">
+      <Setter Property="Background" Value="#FFFF4D3A"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="14,8"/>
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFFF6B5A"/>
+    </Style>
+    <Style Selector="Button.chip">
+      <Setter Property="Padding" Value="12,7"/>
+      <Setter Property="Margin" Value="0,0,8,8"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Background" Value="#28FFFFFF"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Button.chip:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#33FF4D3A"/>
+    </Style>
+    <Style Selector="Button.chip.current">
+      <Setter Property="Background" Value="#33FF4D3A"/>
+      <Setter Property="Foreground" Value="#FFFF6B5A"/>
+    </Style>
+    <Style Selector="TextBlock.muted">
+      <Setter Property="Foreground" Value="{StaticResource HgMutedBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.pageTitle">
+      <Setter Property="FontSize" Value="22"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
   </Application.Styles>
 </Application>

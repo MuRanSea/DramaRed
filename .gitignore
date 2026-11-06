@@ -48,3 +48,14 @@ apps/windows/daemon/anonymous.json
 **/app-debug.apk
 **/app-release.apk
 apps/android/android/local.properties
+
+# Desktop packaging output
+dist/
+
+# Local caches (libmpv download, etc.)
+.cache/
+third_party/libmpv-win-x64/libmpv-2.dll
+third_party/**/libmpv-2.dll.box-store-snap-*
+# e2e dump dirs (keep *-summary.md)
+docs/smoke-artifacts/desktop-e2e-*/
+!docs/smoke-artifacts/*-summary.md

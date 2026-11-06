@@ -2,129 +2,388 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="using:DramaRed.UI.Models"
         x:Class="DramaRed.UI.Views.MainWindow"
-        Width="1180" Height="760"
-        Title="DramaRed (desktop)">
+        Width="1360" Height="860"
+        MinWidth="1100" MinHeight="700"
+        Title="DramaRed"
+        KeyDown="OnWindowKeyDown">
   <DockPanel>
-    <Menu DockPanel.Dock="Top">
-      <MenuItem Header="文件">
-        <MenuItem Header="刷新书城" Click="OnRefreshDiscover"/>
-        <MenuItem Header="退出" Click="OnExit"/>
-      </MenuItem>
-      <MenuItem Header="窗口">
-        <MenuItem Header="隐藏到托盘（音频继续）" Name="MenuHideToTray" Click="OnHideToTray"/>
-        <MenuItem Header="显示主窗口" Click="OnShowFromTray"/>
-      </MenuItem>
-      <MenuItem Header="帮助">
-        <MenuItem Header="关于 / 后端…" Click="OnAbout"/>
-      </MenuItem>
-    </Menu>
-    <TextBlock DockPanel.Dock="Bottom" Margin="8" Name="StatusBar" Text="就绪"/>
-    <Grid ColumnDefinitions="2*,3*,2.5*">
-      <!-- Left: discover + search -->
-      <DockPanel Grid.Column="0" Margin="8">
-        <StackPanel DockPanel.Dock="Top" Spacing="6">
-          <TextBlock FontWeight="Bold" Text="书城 / 搜索"/>
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <TextBox Width="160" Name="SearchBox" PlaceholderText="关键词"/>
-            <Button Content="搜索" Click="OnSearch"/>
-            <Button Content="推荐" Click="OnRefreshDiscover"/>
-          </StackPanel>
-          <TextBlock Name="CatalogHint" Text="加载推荐或搜索…"/>
-        </StackPanel>
-        <ListBox Name="SeriesList" Margin="0,8,0,0"
-                 DoubleTapped="OnSeriesActivate"
-                 SelectionChanged="OnSeriesSelected">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="models:SeriesSummary">
-              <TextBlock Text="{Binding ListLabel}" TextWrapping="Wrap"/>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-      </DockPanel>
+    <Border DockPanel.Dock="Bottom" Background="#FF111113" Padding="16,8" BorderBrush="#22FFFFFF" BorderThickness="0,1,0,0">
+      <TextBlock Name="StatusBar" Classes="muted" Text="就绪" TextWrapping="NoWrap"/>
+    </Border>
 
-      <!-- Middle: episodes -->
-      <DockPanel Grid.Column="1" Margin="8">
-        <StackPanel DockPanel.Dock="Top" Spacing="6">
-          <TextBlock FontWeight="Bold" Name="SeriesTitle" Text="分集"/>
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <Button Content="收藏" Name="FavAddBtn" Click="OnFavoriteAdd"/>
-            <Button Content="取消收藏" Click="OnFavoriteRemove"/>
-            <Button Content="刷新分集" Click="OnReloadEpisodes"/>
-          </StackPanel>
-          <TextBlock Name="EpisodeHint" Text="选择左侧剧集"/>
+    <Border DockPanel.Dock="Top" Background="#FF111113" Padding="18,12" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <Border Width="12" Height="12" CornerRadius="6" Background="#FFFF4D3A"/>
+          <TextBlock FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Text="DramaRed"/>
+          <TextBlock Classes="muted" VerticalAlignment="Center" Text="桌面端"/>
         </StackPanel>
-        <ListBox Name="EpisodeList" Margin="0,8,0,0" DoubleTapped="OnEpisodeActivate">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="models:EpisodeItem">
-              <TextBlock Text="{Binding ListLabel}"/>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-      </DockPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+          <TextBox Name="SearchBox" Width="420" PlaceholderText="搜索短剧、演员…"
+                   KeyDown="OnSearchKeyDown"/>
+          <Button Classes="accent" Content="搜索" Click="OnSearch"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <Button Content="隐藏继续听" Click="OnHideToTray" ToolTip.Tip="Ctrl+H · 窗口隐藏，音频继续"/>
+          <Button Content="刷新" Click="OnRefreshHome" ToolTip.Tip="重新加载推荐"/>
+          <Button Content="设置" Click="OnAbout"/>
+        </StackPanel>
+      </Grid>
+    </Border>
 
-      <!-- Right: player + history/fav -->
-      <DockPanel Grid.Column="2" Margin="8">
-        <TabControl>
-          <TabItem Header="播放">
-            <ScrollViewer>
-              <StackPanel Spacing="8" Margin="4">
-                <Border Background="#22000000" MinHeight="160" CornerRadius="6" Padding="12">
-                  <StackPanel Spacing="4">
-                    <TextBlock Name="PlayerTitle" FontWeight="SemiBold" Text="未播放"/>
-                    <TextBlock Name="PlayerBackend" TextWrapping="Wrap" Text="播放后端：…"/>
-                    <TextBlock Name="PlayerStatus" TextWrapping="Wrap" Text="选择分集后双击播放；画面在独立 mpv 窗口（或 audio-only）。"/>
+    <Grid ColumnDefinitions="200,*">
+      <Border Background="#FF111113" BorderBrush="#22FFFFFF" BorderThickness="0,0,1,0">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Bottom" Margin="14,8,14,14" Spacing="4">
+            <TextBlock Classes="muted" FontSize="11" Text="空格播放 · ↑↓切集"/>
+            <TextBlock Classes="muted" FontSize="11" Text="←→快进 · Ctrl+H 隐藏"/>
+          </StackPanel>
+          <ListBox Name="NavList" Classes="nav" SelectionChanged="OnNavChanged" SelectedIndex="0">
+            <ListBoxItem Tag="home" Content="首页推荐"/>
+            <ListBoxItem Tag="theater" Content="剧场"/>
+            <ListBoxItem Tag="search" Content="搜索"/>
+            <ListBoxItem Tag="player" Content="正在播放" Name="NavPlayerItem"/>
+            <ListBoxItem Tag="history" Content="历史"/>
+            <ListBoxItem Tag="favorites" Content="收藏"/>
+            <ListBoxItem Tag="settings" Content="设置"/>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <Panel Grid.Column="1" Margin="22,18">
+        <!-- Home -->
+        <DockPanel Name="PageHome">
+          <Grid DockPanel.Dock="Top" Margin="0,0,0,14" ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="pageTitle" Text="为你推荐"/>
+              <TextBlock Name="HomeHint" Classes="muted" Text="宽屏海报墙，点击进入播放。"/>
+            </StackPanel>
+            <Button Grid.Column="1" VerticalAlignment="Top" Content="重新加载" Click="OnRefreshHome"/>
+          </Grid>
+          <Panel>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" Name="HomeScroll">
+              <ItemsControl Name="HomeGrid" Margin="0,0,0,8">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:PosterItem">
+                    <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                      <StackPanel>
+                        <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                          <Panel>
+                            <TextBlock Text="封面" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Opacity="0.2"/>
+                            <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                          </Panel>
+                        </Border>
+                        <StackPanel Margin="10,10,10,12" Spacing="3">
+                          <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" MaxHeight="42"/>
+                          <TextBlock Text="{Binding Meta}" Classes="muted" FontSize="12"/>
+                        </StackPanel>
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <Border Name="HomeEmpty" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#FF1C1C1F" CornerRadius="16" Padding="36,28" MaxWidth="520">
+              <StackPanel Spacing="12" HorizontalAlignment="Center">
+                <TextBlock FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Text="暂时没有推荐"/>
+                <TextBlock Name="HomeEmptyDetail" Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                           Text="可能是上游短暂繁忙，或本地服务还在启动。"/>
+                <Button Classes="accent" HorizontalAlignment="Center" Content="立即重试" Click="OnRefreshHome" Margin="0,6,0,0"/>
+              </StackPanel>
+            </Border>
+          </Panel>
+        </DockPanel>
+
+        <!-- Theater -->
+        <DockPanel Name="PageTheater" IsVisible="False">
+          <Grid DockPanel.Dock="Top" Margin="0,0,0,14" ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Classes="pageTitle" Text="剧场"/>
+              <TextBlock Name="TheaterHint" Classes="muted" Text="浏览推荐剧目，海报网格找剧。"/>
+            </StackPanel>
+            <Button Grid.Column="1" VerticalAlignment="Top" Content="重新加载" Click="OnRefreshHome"/>
+          </Grid>
+          <Panel>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl Name="TheaterGrid">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:PosterItem">
+                    <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                      <StackPanel>
+                        <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                          <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                        </Border>
+                        <StackPanel Margin="10,10,10,12" Spacing="3">
+                          <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" MaxHeight="42"/>
+                          <TextBlock Text="{Binding Meta}" Classes="muted" FontSize="12"/>
+                        </StackPanel>
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <Border Name="TheaterEmpty" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#FF1C1C1F" CornerRadius="16" Padding="36,28" MaxWidth="520">
+              <StackPanel Spacing="12">
+                <TextBlock FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Text="剧场暂无内容"/>
+                <TextBlock Name="TheaterEmptyDetail" Classes="muted" TextWrapping="Wrap" TextAlignment="Center"/>
+                <Button Classes="accent" HorizontalAlignment="Center" Content="立即重试" Click="OnRefreshHome"/>
+              </StackPanel>
+            </Border>
+          </Panel>
+        </DockPanel>
+
+        <!-- Search -->
+        <DockPanel Name="PageSearch" IsVisible="False">
+          <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+            <TextBlock Classes="pageTitle" Text="搜索"/>
+            <TextBlock Name="SearchHint" Classes="muted" Text="在顶栏输入关键词后回车，或点搜索。"/>
+          </StackPanel>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl Name="SearchGrid">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:PosterItem">
+                  <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                    <StackPanel>
+                      <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                        <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                      </Border>
+                      <StackPanel Margin="10,10,10,12" Spacing="3">
+                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" MaxHeight="42"/>
+                        <TextBlock Text="{Binding Meta}" Classes="muted" FontSize="12"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+
+        <!-- Player -->
+        <Grid Name="PagePlayer" IsVisible="False" ColumnDefinitions="320,*" ColumnSpacing="22">
+          <Border Background="#FF161618" CornerRadius="16" Padding="16">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,14,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <Button Content="上一集" Click="OnPrevEpisode"/>
+                  <Button Classes="accent" Content="播放/暂停" Click="OnTogglePause" MinWidth="100"/>
+                  <Button Content="下一集" Click="OnNextEpisode"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <Button Content="停止" Click="OnStop"/>
+                  <Button Content="静音" Click="OnMute"/>
+                  <Button Content="去首页" Click="OnGoHome"/>
+                </StackPanel>
+                <TextBlock Name="PlayerBackend" Classes="muted" FontSize="12" TextWrapping="Wrap" Text="播放后端：检测中…"/>
+              </StackPanel>
+              <Viewbox Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <Border Width="270" Height="480" CornerRadius="22" Background="#FF0A0A0C"
+                        BorderBrush="#33FFFFFF" BorderThickness="1" ClipToBounds="True">
+                  <Panel>
+                    <TextBlock Text="竖屏预览" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Opacity="0.18" FontSize="22"/>
+                    <Image Name="PlayerCover" Stretch="UniformToFill"/>
+                    <Border Background="#B3000000" VerticalAlignment="Bottom" Padding="14,12">
+                      <StackPanel Spacing="4">
+                        <TextBlock Name="PlayerTitle" FontWeight="SemiBold" TextWrapping="Wrap" Text="未播放"/>
+                        <TextBlock Name="PlayerStatus" Classes="muted" FontSize="12" TextWrapping="Wrap"
+                                   Text="从首页或剧场点一部短剧开始。画面在独立播放窗口。"/>
+                      </StackPanel>
+                    </Border>
+                  </Panel>
+                </Border>
+              </Viewbox>
+            </DockPanel>
+          </Border>
+
+          <Border Grid.Column="1" Background="#FF161618" CornerRadius="16" Padding="18">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Top" Spacing="12">
+                <TextBlock Name="SeriesTitle" Classes="pageTitle" Text="选集"/>
+                <TextBlock Name="EpisodeHint" Classes="muted" Text="打开一部短剧后，这里会列出全部集数。"/>
+                <Border Background="#FF1C1C1F" CornerRadius="12" Padding="12,10">
+                  <WrapPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
+                      <TextBlock VerticalAlignment="Center" Text="清晰度"/>
+                      <ComboBox Name="QualityBox" Width="120" SelectionChanged="OnQualityChanged"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
+                      <TextBlock VerticalAlignment="Center" Text="倍速"/>
+                      <ComboBox Name="RateBox" Width="90" SelectionChanged="OnRateChanged">
+                        <ComboBoxItem Tag="0.75" Content="0.75x"/>
+                        <ComboBoxItem Tag="1.0" Content="1.0x"/>
+                        <ComboBoxItem Tag="1.25" Content="1.25x"/>
+                        <ComboBoxItem Tag="1.5" Content="1.5x"/>
+                        <ComboBoxItem Tag="2.0" Content="2.0x"/>
+                      </ComboBox>
+                    </StackPanel>
+                    <CheckBox Name="AutoNextBox" IsChecked="True" Content="自动连播" Margin="0,0,16,8"
+                              VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
+                      <TextBlock VerticalAlignment="Center" Text="定时停"/>
+                      <ComboBox Name="StopAfterBox" Width="110" SelectionChanged="OnStopAfterChanged">
+                        <ComboBoxItem Tag="0" Content="关闭"/>
+                        <ComboBoxItem Tag="15" Content="15 分钟"/>
+                        <ComboBoxItem Tag="30" Content="30 分钟"/>
+                        <ComboBoxItem Tag="45" Content="45 分钟"/>
+                        <ComboBoxItem Tag="60" Content="60 分钟"/>
+                      </ComboBox>
+                    </StackPanel>
+                    <Button Name="FavToggleBtn" Content="收藏" Classes="accent" Click="OnFavoriteToggle" Margin="0,0,8,8"/>
+                  </WrapPanel>
+                </Border>
+                <TextBlock Name="TimerHint" Classes="muted" Text="定时停止：关"/>
+              </StackPanel>
+
+              <Panel>
+                <ScrollViewer>
+                  <ItemsControl Name="EpisodeList" Margin="0,10,0,0">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="models:EpisodeItem">
+                        <Button Classes="chip" MinWidth="88" Click="OnEpisodeClick"
+                                Content="{Binding ChipLabel}" ToolTip.Tip="{Binding ListLabel}"/>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+                <Border Name="PlayerEmpty" IsVisible="True" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="#FF1C1C1F" CornerRadius="14" Padding="28,22" MaxWidth="420">
+                  <StackPanel Spacing="10">
+                    <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Text="还没有打开短剧"/>
+                    <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                               Text="去首页或剧场点一张海报，这里会出现剧名和全集列表。"/>
+                    <Button Classes="accent" HorizontalAlignment="Center" Content="去首页选剧" Click="OnGoHome"/>
                   </StackPanel>
                 </Border>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="播放/继续" Click="OnResume"/>
-                  <Button Content="暂停" Click="OnPause"/>
-                  <Button Content="停止" Click="OnStop"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock VerticalAlignment="Center" Text="倍速"/>
-                  <ComboBox Name="RateBox" Width="90" SelectionChanged="OnRateChanged">
-                    <ComboBoxItem Tag="0.75" Content="0.75x"/>
-                    <ComboBoxItem Tag="1.0" Content="1.0x"/>
-                    <ComboBoxItem Tag="1.25" Content="1.25x"/>
-                    <ComboBoxItem Tag="1.5" Content="1.5x"/>
-                    <ComboBoxItem Tag="2.0" Content="2.0x"/>
-                  </ComboBox>
-                </StackPanel>
-                <CheckBox Name="AutoNextBox" IsChecked="True" Content="自动连播下一集"/>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock VerticalAlignment="Center" Text="定时停"/>
-                  <ComboBox Name="StopAfterBox" Width="120" SelectionChanged="OnStopAfterChanged">
-                    <ComboBoxItem Tag="0" Content="关闭"/>
-                    <ComboBoxItem Tag="15" Content="15 分钟"/>
-                    <ComboBoxItem Tag="30" Content="30 分钟"/>
-                    <ComboBoxItem Tag="45" Content="45 分钟"/>
-                    <ComboBoxItem Tag="60" Content="60 分钟"/>
-                  </ComboBox>
-                </StackPanel>
-                <TextBlock Name="TimerHint" Text="定时停止：关"/>
+              </Panel>
+            </DockPanel>
+          </Border>
+        </Grid>
+
+        <!-- History -->
+        <DockPanel Name="PageHistory" IsVisible="False">
+          <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Classes="pageTitle" Text="历史"/>
+            <TextBlock Name="HistoryHint" Classes="muted" Text="点一项从上次进度续播。"/>
+          </StackPanel>
+          <Panel>
+          <ListBox Name="HistoryList" DoubleTapped="OnHistoryActivate" Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="models:HistoryRow">
+                <Border Background="#FF1C1C1F" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                  <Grid ColumnDefinitions="56,*">
+                    <Border Width="48" Height="64" CornerRadius="6" Background="#22FFFFFF" ClipToBounds="True">
+                      <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="2">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                      <TextBlock Text="{Binding Subtitle}" Classes="muted"/>
+                      <TextBlock Text="{Binding Updated}" Classes="muted" FontSize="12"/>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+            <Border Name="HistoryEmpty" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#FF1C1C1F" CornerRadius="14" Padding="28,22" MaxWidth="420">
+              <StackPanel Spacing="10">
+                <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Text="还没有观看记录"/>
+                <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                           Text="去首页或剧场点开一部短剧，进度会出现在这里。"/>
+                <Button Classes="accent" HorizontalAlignment="Center" Content="去首页" Click="OnGoHome"/>
               </StackPanel>
-            </ScrollViewer>
-          </TabItem>
-          <TabItem Header="历史">
-            <DockPanel>
-              <Button DockPanel.Dock="Top" Content="刷新历史" Margin="0,0,0,6" Click="OnRefreshHistory"/>
-              <ListBox Name="HistoryList" DoubleTapped="OnHistoryActivate">
-                <ListBox.ItemTemplate>
-                  <DataTemplate x:DataType="models:HistoryItem">
-                    <TextBlock Text="{Binding ListLabel}" TextWrapping="Wrap"/>
-                  </DataTemplate>
-                </ListBox.ItemTemplate>
-              </ListBox>
-            </DockPanel>
-          </TabItem>
-          <TabItem Header="收藏">
-            <DockPanel>
-              <Button DockPanel.Dock="Top" Content="刷新收藏" Margin="0,0,0,6" Click="OnRefreshFavorites"/>
-              <ListBox Name="FavoritesList" DoubleTapped="OnFavoriteActivate"/>
-            </DockPanel>
-          </TabItem>
-        </TabControl>
-      </DockPanel>
+            </Border>
+          </Panel>
+        </DockPanel>
+
+        <!-- Favorites -->
+        <DockPanel Name="PageFavorites" IsVisible="False">
+          <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
+            <TextBlock Classes="pageTitle" Text="收藏"/>
+            <TextBlock Name="FavoritesHint" Classes="muted" Text="收藏的短剧会显示在这里。"/>
+          </StackPanel>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl Name="FavoritesGrid">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:PosterItem">
+                  <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                    <StackPanel>
+                      <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                        <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
+                      </Border>
+                      <StackPanel Margin="10,10,10,12" Spacing="3">
+                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontWeight="SemiBold" MaxHeight="42"/>
+                        <TextBlock Text="{Binding Meta}" Classes="muted" FontSize="12"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+
+        <!-- Settings -->
+        <ScrollViewer Name="PageSettings" IsVisible="False">
+          <StackPanel Spacing="14" MaxWidth="760" HorizontalAlignment="Left">
+            <TextBlock Classes="pageTitle" Text="设置"/>
+            <TextBlock TextWrapping="Wrap"
+                       Text="功能对齐 Android 首版：搜索、推荐、剧场、分集、在线播放（清晰度/倍速/自动连播）、历史续播、收藏、定时停播、后台听。不做下载。"/>
+            <Border Background="#FF1C1C1F" CornerRadius="12" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock FontWeight="SemiBold" Text="本地服务"/>
+                <TextBlock Name="SettingsHealth" TextWrapping="Wrap" Text="daemon：检测中…"/>
+                <TextBlock Name="SettingsBackend" TextWrapping="Wrap" Text="播放后端：…"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="accent" Content="重新检测 / 拉起 daemon" Click="OnAbout"/>
+                  <Button Content="重新加载推荐" Click="OnRefreshHome"/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Background="#FF1C1C1F" CornerRadius="12" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock FontWeight="SemiBold" Text="播放说明"/>
+                <TextBlock Classes="muted" TextWrapping="Wrap"
+                           Text="Windows 发布包已捆绑 LGPL 版 libmpv-2.dll。点击播放后会出现独立的竖屏播放窗口；左侧预览框显示封面与状态。「隐藏继续听」可把主窗口藏起来继续听。"/>
+                <TextBlock TextWrapping="Wrap"
+                           Text="快捷键：空格 播放/暂停 · ↑ / PageUp 上一集 · ↓ / PageDown 下一集 · ← → 快退/快进 · M 静音 · Ctrl+F 搜索 · Ctrl+H 隐藏继续听 · Esc 离开播放页"/>
+              </StackPanel>
+            </Border>
+            <TextBlock Classes="muted" TextWrapping="Wrap"
+                       Text="个人学习 / 自用。基于非官方 openhongguo SDK，禁止商业使用。短剧内容版权归原权利人。libmpv 遵循 LGPL，见发布包 THIRD_PARTY。"/>
+          </StackPanel>
+        </ScrollViewer>
+      </Panel>
     </Grid>
   </DockPanel>
 </Window>

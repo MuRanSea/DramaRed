@@ -48,7 +48,18 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeErr(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
+	writeJSON(w, status, map[string]string{
+		"error":   msg,
+		"message": msg,
+	})
+}
+
+func writeUpstreamErr(w http.ResponseWriter, err error) {
+	status, message := classifyUpstream(err)
+	writeJSON(w, status, map[string]string{
+		"error":   err.Error(),
+		"message": message,
+	})
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -67,7 +78,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 	}
 	page, err := s.ohg.Search(r.Context(), q)
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		writeUpstreamErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -76,7 +87,7 @@ func (s *Server) search(w http.ResponseWriter, r *http.Request) {
 func (s *Server) discover(w http.ResponseWriter, r *http.Request) {
 	page, err := s.ohg.Discover(r.Context())
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		writeUpstreamErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -86,7 +97,7 @@ func (s *Server) episodes(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	page, err := s.ohg.ListEpisodes(r.Context(), id)
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		writeUpstreamErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, page)
@@ -97,7 +108,7 @@ func (s *Server) playback(w http.ResponseWriter, r *http.Request) {
 	pb, err := s.ohg.ResolvePlayback(r.Context(), id)
 	if pb == nil {
 		if err != nil {
-			writeErr(w, http.StatusBadGateway, err.Error())
+			writeUpstreamErr(w, err)
 			return
 		}
 		writeErr(w, http.StatusBadGateway, "empty playback")
