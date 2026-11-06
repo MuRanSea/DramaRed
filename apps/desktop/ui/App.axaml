@@ -42,8 +42,9 @@
     <Style Selector="Button.poster">
       <Setter Property="Background" Value="{StaticResource HgCardBrush}"/>
       <Setter Property="Padding" Value="0"/>
-      <Setter Property="CornerRadius" Value="10"/>
-      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="BorderBrush" Value="#14FFFFFF"/>
       <Setter Property="HorizontalAlignment" Value="Left"/>
     </Style>
     <Style Selector="Button.poster:pointerover /template/ ContentPresenter">
@@ -59,10 +60,14 @@
       <Setter Property="Background" Value="#FFFF6B5A"/>
     </Style>
     <Style Selector="Button.chip">
-      <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="Padding" Value="12,7"/>
       <Setter Property="Margin" Value="0,0,8,8"/>
-      <Setter Property="CornerRadius" Value="8"/>
-      <Setter Property="Background" Value="#22FFFFFF"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Background" Value="#28FFFFFF"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="Button.chip:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#33FF4D3A"/>
     </Style>
     <Style Selector="Button.chip.current">
       <Setter Property="Background" Value="#33FF4D3A"/>

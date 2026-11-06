@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../widgets/poster_card.dart';
 import 'player_page.dart';
 import 'settings_page.dart';
+import '../widgets/status_pane.dart';
 
 /// 「我的」：历史 + 收藏（点进续播）以及设置入口（含定时停播）。
 class MinePage extends StatefulWidget {
@@ -211,7 +212,11 @@ class _HistoryGrid extends StatelessWidget {
           items = items.where((e) => e.episodeCount == 0 || e.episodeNumber < e.episodeCount).toList();
         }
         if (items.isEmpty) {
-          return const Center(child: Text('暂无历史', style: TextStyle(color: HgColors.mineMuted)));
+          return const StatusPane(
+            title: '还没有观看记录',
+            detail: '去首页或剧场点开一部短剧，进度会出现在这里。',
+            light: true,
+          );
         }
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(10, 8, 10, 16),
@@ -285,7 +290,11 @@ class _FavoritesGrid extends StatelessWidget {
         }
         final items = snap.data ?? const <FavoriteEntry>[];
         if (items.isEmpty) {
-          return const Center(child: Text('暂无收藏', style: TextStyle(color: HgColors.mineMuted)));
+          return const StatusPane(
+            title: '还没有收藏',
+            detail: '在首页点星标，或播放页点收藏，方便下次续看。',
+            light: true,
+          );
         }
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(10, 8, 10, 16),

@@ -7,6 +7,7 @@ import '../services/favorites_store.dart';
 import '../services/ohg_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/cover_image.dart';
+import '../widgets/status_pane.dart';
 
 /// 首页：竖滑换剧的推荐流。点封面进入播放页后再切集。
 class HomePage extends StatefulWidget {
@@ -46,13 +47,14 @@ class _HomePageState extends State<HomePage> {
           if (snap.connectionState != ConnectionState.done) {
             body = const Center(child: CircularProgressIndicator());
           } else if (snap.hasError) {
-            body = _ErrorPane(error: snap.error, onRetry: _reload);
+            body = StatusPane.error(error: snap.error, onRetry: _reload);
           } else {
             final items = snap.data?.items ?? const <SeriesSummary>[];
             if (items.isEmpty) {
-              body = _EmptyPane(
-                message: '暂无内容',
-                action: '刷新',
+              body = StatusPane.empty(
+                title: '暂时没有推荐',
+                detail: '可以下拉刷新，或去剧场找剧。',
+                actionLabel: '刷新',
                 onAction: _reload,
               );
             } else {
@@ -331,58 +333,3 @@ class _SideBtn extends StatelessWidget {
   }
 }
 
-class _ErrorPane extends StatelessWidget {
-  const _ErrorPane({required this.error, required this.onRetry});
-  final Object? error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('加载失败\n$error', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('重试'),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '需 Android/iOS；模拟器需可出网才能拉推荐。',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyPane extends StatelessWidget {
-  const _EmptyPane({required this.message, this.action, this.onAction});
-  final String message;
-  final String? action;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(message, style: const TextStyle(color: Colors.white70)),
-          if (action != null && onAction != null) ...[
-            const SizedBox(height: 12),
-            OutlinedButton(onPressed: onAction, child: Text(action!)),
-          ],
-        ],
-      ),
-    );
-  }
-}

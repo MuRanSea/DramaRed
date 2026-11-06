@@ -5,6 +5,7 @@ import '../navigation/play_nav.dart';
 import '../services/ohg_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/poster_card.dart';
+import '../widgets/status_pane.dart';
 
 /// 剧场：三列竖海报找剧（原「书城」列表）。
 class TheaterPage extends StatefulWidget {
@@ -35,6 +36,13 @@ class _TheaterPageState extends State<TheaterPage> {
       backgroundColor: HgColors.bg,
       appBar: AppBar(
         title: const Text('剧场'),
+        actions: [
+          IconButton(
+            tooltip: '刷新',
+            onPressed: _reload,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: FutureBuilder<PagedResult<SeriesSummary>>(
         future: _future,
@@ -43,39 +51,26 @@ class _TheaterPageState extends State<TheaterPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('加载失败\n${snap.error}', textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
-                  FilledButton(onPressed: _reload, child: const Text('重试')),
-                ],
-              ),
-            );
+            return StatusPane.error(error: snap.error, onRetry: _reload);
           }
           final items = snap.data?.items ?? const <SeriesSummary>[];
           if (items.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('暂无剧集'),
-                  const SizedBox(height: 12),
-                  OutlinedButton(onPressed: _reload, child: const Text('刷新')),
-                ],
-              ),
+            return StatusPane.empty(
+              title: '剧场暂无内容',
+              detail: '稍后再试，或用顶栏搜索找剧。',
+              actionLabel: '刷新',
+              onAction: _reload,
             );
           }
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 16),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.48,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 14,
+                childAspectRatio: 0.50,
               ),
               itemCount: items.length,
               itemBuilder: (context, i) {

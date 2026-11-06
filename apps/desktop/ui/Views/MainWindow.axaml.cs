@@ -757,10 +757,17 @@ public partial class MainWindow : Window
                 _history.Add(row);
                 _ = LoadCoverAsync(row);
             }
+            if (HistoryEmpty != null) HistoryEmpty.IsVisible = _history.Count == 0;
+            if (HistoryHint != null)
+            {
+                HistoryHint.Text = _history.Count == 0
+                    ? "还没有记录"
+                    : $"共 {_history.Count} 条 · 双击续播";
+            }
         }
         catch
         {
-            // daemon may be down
+            if (HistoryEmpty != null) HistoryEmpty.IsVisible = _history.Count == 0;
         }
     }
 

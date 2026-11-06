@@ -116,6 +116,9 @@ else
   fi
 fi
 
+if [[ "${SKIP_PACKAGE:-0}" == "1" ]]; then
+  skip "Windows package (SKIP_PACKAGE=1)"
+else
 log "6) package zip + static libmpv checks"
 (cd "${ROOT}" && ./scripts/package-windows.sh) | tee "${OUT}/package.log"
 ZIP="${ROOT}/dist/DramaRed-desktop-win-x64.zip"
@@ -136,6 +139,7 @@ ok "zip contains libmpv-2.dll + exes"
 
 # Windows detection logic (unit already covers); also assert first candidate path shape in shipped docs/README
 rg -q "libmpv-2.dll" "${ROOT}/dist/DramaRed-desktop-win-x64/README.txt" && ok "README mentions libmpv" || bad "README missing libmpv note"
+fi
 
 echo "" | tee -a "${OUT}/summary.txt"
 echo "RESULT pass=${PASS} fail=${FAIL} skip=${SKIP}" | tee -a "${OUT}/summary.txt"

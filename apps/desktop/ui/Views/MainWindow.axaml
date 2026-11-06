@@ -288,8 +288,9 @@
         <DockPanel Name="PageHistory" IsVisible="False">
           <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,12">
             <TextBlock Classes="pageTitle" Text="历史"/>
-            <TextBlock Classes="muted" Text="点一项从上次进度续播。"/>
+            <TextBlock Name="HistoryHint" Classes="muted" Text="点一项从上次进度续播。"/>
           </StackPanel>
+          <Panel>
           <ListBox Name="HistoryList" DoubleTapped="OnHistoryActivate" Background="Transparent" BorderThickness="0">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="models:HistoryRow">
@@ -308,6 +309,16 @@
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
+            <Border Name="HistoryEmpty" IsVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#FF1C1C1F" CornerRadius="14" Padding="28,22" MaxWidth="420">
+              <StackPanel Spacing="10">
+                <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Text="还没有观看记录"/>
+                <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                           Text="去首页或剧场点开一部短剧，进度会出现在这里。"/>
+                <Button Classes="accent" HorizontalAlignment="Center" Content="去首页" Click="OnGoHome"/>
+              </StackPanel>
+            </Border>
+          </Panel>
         </DockPanel>
 
         <!-- Favorites -->
