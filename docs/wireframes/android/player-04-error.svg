@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="780" viewBox="0 0 720 780">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+</style>
+<rect width="720" height="780" fill="#08080a"/>
+
+<rect x="16" y="16" width="360" height="720" rx="26" class="phone"/><rect x="126" y="24" width="140" height="8" rx="4" fill="#222"/>
+<text x="36" y="36" class="mu xs">9:41</text><text x="340" y="36" text-anchor="end" class="mu xs">5G 100%</text>
+<text x="36" y="70" class="fg">‹</text>
+<rect x="16" y="90" width="360" height="520" fill="#0a0a0a"/>
+<rect x="58" y="280" width="276" height="180" rx="14" class="panel"/>
+<text x="196" y="330" text-anchor="middle" class="warn s">播放失败</text>
+<text x="196" y="358" text-anchor="middle" class="mu xs">线路繁忙或地址失效</text>
+<rect x="110" y="390" width="172" height="40" rx="20" class="accent"/>
+<text x="196" y="415" text-anchor="middle" class="s" fill="#111">重试</text>
+<text x="400" y="330" class="anno">Error</text>
+<text x="400" y="415" class="anno">重试拉流</text>
+<text x="400" y="450" class="anno">可返回换集</text>
+<text x="400" y="520" class="spec">尺寸 / 控件规格</text>
+<text x="400" y="536" class="spec">错误卡片居中</text>
+<text x="400" y="550" class="spec">按钮高 40</text>
+
+</svg>

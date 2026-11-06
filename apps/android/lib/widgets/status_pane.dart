@@ -127,7 +127,7 @@ class StatusPane extends StatelessWidget {
                         backgroundColor: HgColors.accent,
                         foregroundColor: Colors.white,
                         minimumSize: const Size(120, 40),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       child: Text(actionLabel),
                     ),

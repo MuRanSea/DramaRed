@@ -57,8 +57,8 @@ class _TheaterPageState extends State<TheaterPage> {
           if (items.isEmpty) {
             return StatusPane.empty(
               title: '剧场暂无内容',
-              detail: '稍后再试，或用顶栏搜索找剧。',
-              actionLabel: '刷新',
+              detail: '稍后再试，或去搜索找剧。',
+              actionLabel: '重试',
               onAction: _reload,
             );
           }
@@ -68,8 +68,8 @@ class _TheaterPageState extends State<TheaterPage> {
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 14,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 12,
                 childAspectRatio: 0.50,
               ),
               itemCount: items.length,

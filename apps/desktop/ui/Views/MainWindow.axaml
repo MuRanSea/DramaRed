@@ -14,7 +14,7 @@
     <Border DockPanel.Dock="Top" Background="#FF111113" Padding="18,12" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <Border Width="12" Height="12" CornerRadius="6" Background="#FFFF4D3A"/>
+          <Image Width="22" Height="22" Source="avares://DramaRed.UI/Assets/tomato.png"/>
           <TextBlock FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Text="DramaRed"/>
           <TextBlock Classes="muted" VerticalAlignment="Center" Text="桌面端"/>
         </StackPanel>
@@ -31,7 +31,7 @@
       </Grid>
     </Border>
 
-    <Grid ColumnDefinitions="200,*">
+    <Grid ColumnDefinitions="180,*">
       <Border Background="#FF111113" BorderBrush="#22FFFFFF" BorderThickness="0,0,1,0">
         <DockPanel>
           <StackPanel DockPanel.Dock="Bottom" Margin="14,8,14,14" Spacing="4">
@@ -39,10 +39,10 @@
             <TextBlock Classes="muted" FontSize="11" Text="←→快进 · Ctrl+H 隐藏"/>
           </StackPanel>
           <ListBox Name="NavList" Classes="nav" SelectionChanged="OnNavChanged" SelectedIndex="0">
-            <ListBoxItem Tag="home" Content="首页推荐"/>
+            <ListBoxItem Tag="home" Content="推荐"/>
             <ListBoxItem Tag="theater" Content="剧场"/>
             <ListBoxItem Tag="search" Content="搜索"/>
-            <ListBoxItem Tag="player" Content="正在播放" Name="NavPlayerItem"/>
+            <ListBoxItem Tag="player" Content="播放" Name="NavPlayerItem"/>
             <ListBoxItem Tag="history" Content="历史"/>
             <ListBoxItem Tag="favorites" Content="收藏"/>
             <ListBoxItem Tag="settings" Content="设置"/>
@@ -70,9 +70,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="models:PosterItem">
-                    <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                    <Button Classes="poster" Width="140" Margin="0,0,12,16" Click="OnPosterClick">
                       <StackPanel>
-                        <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                        <Border Height="190" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
                           <Panel>
                             <TextBlock Text="封面" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        Opacity="0.2"/>
@@ -120,9 +120,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="models:PosterItem">
-                    <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                    <Button Classes="poster" Width="140" Margin="0,0,12,16" Click="OnPosterClick">
                       <StackPanel>
-                        <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                        <Border Height="190" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
                           <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
                         </Border>
                         <StackPanel Margin="10,10,10,12" Spacing="3">
@@ -161,9 +161,9 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:PosterItem">
-                  <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                  <Button Classes="poster" Width="140" Margin="0,0,12,16" Click="OnPosterClick">
                     <StackPanel>
-                      <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                      <Border Height="190" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
                         <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
                       </Border>
                       <StackPanel Margin="10,10,10,12" Spacing="3">
@@ -199,7 +199,7 @@
                 <Border Width="270" Height="480" CornerRadius="22" Background="#FF0A0A0C"
                         BorderBrush="#33FFFFFF" BorderThickness="1" ClipToBounds="True">
                   <Panel>
-                    <TextBlock Text="竖屏预览" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    <TextBlock Text="9:16 预览" HorizontalAlignment="Center" VerticalAlignment="Center"
                                Opacity="0.18" FontSize="22"/>
                     <Image Name="PlayerCover" Stretch="UniformToFill"/>
                     <Border Background="#B3000000" VerticalAlignment="Bottom" Padding="14,12">
@@ -238,20 +238,10 @@
                     </StackPanel>
                     <CheckBox Name="AutoNextBox" IsChecked="True" Content="自动连播" Margin="0,0,16,8"
                               VerticalAlignment="Center"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
-                      <TextBlock VerticalAlignment="Center" Text="定时停"/>
-                      <ComboBox Name="StopAfterBox" Width="110" SelectionChanged="OnStopAfterChanged">
-                        <ComboBoxItem Tag="0" Content="关闭"/>
-                        <ComboBoxItem Tag="15" Content="15 分钟"/>
-                        <ComboBoxItem Tag="30" Content="30 分钟"/>
-                        <ComboBoxItem Tag="45" Content="45 分钟"/>
-                        <ComboBoxItem Tag="60" Content="60 分钟"/>
-                      </ComboBox>
-                    </StackPanel>
                     <Button Name="FavToggleBtn" Content="收藏" Classes="accent" Click="OnFavoriteToggle" Margin="0,0,8,8"/>
                   </WrapPanel>
                 </Border>
-                <TextBlock Name="TimerHint" Classes="muted" Text="定时停止：关"/>
+                <TextBlock Name="TimerHint" Classes="muted" Text="定时停播请到「设置」调整"/>
               </StackPanel>
 
               <Panel>
@@ -273,10 +263,10 @@
                 <Border Name="PlayerEmpty" IsVisible="True" HorizontalAlignment="Center" VerticalAlignment="Center"
                         Background="#FF1C1C1F" CornerRadius="14" Padding="28,22" MaxWidth="420">
                   <StackPanel Spacing="10">
-                    <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Text="还没有打开短剧"/>
+                    <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Text="尚未选择剧集"/>
                     <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
-                               Text="去首页或剧场点一张海报，这里会出现剧名和全集列表。"/>
-                    <Button Classes="accent" HorizontalAlignment="Center" Content="去首页选剧" Click="OnGoHome"/>
+                               Text="从推荐 / 剧场 / 搜索点进一部短剧，这里会出现剧名和全集列表。"/>
+                    <Button Classes="accent" HorizontalAlignment="Center" Content="去推荐选剧" Click="OnGoHome"/>
                   </StackPanel>
                 </Border>
               </Panel>
@@ -336,9 +326,9 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:PosterItem">
-                  <Button Classes="poster" Width="168" Margin="0,0,16,18" Click="OnPosterClick">
+                  <Button Classes="poster" Width="140" Margin="0,0,12,16" Click="OnPosterClick">
                     <StackPanel>
-                      <Border Height="236" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
+                      <Border Height="190" Background="#FF26262A" CornerRadius="12,12,0,0" ClipToBounds="True">
                         <Image Source="{Binding Cover}" Stretch="UniformToFill"/>
                       </Border>
                       <StackPanel Margin="10,10,10,12" Spacing="3">
@@ -359,6 +349,26 @@
             <TextBlock Classes="pageTitle" Text="设置"/>
             <TextBlock TextWrapping="Wrap"
                        Text="功能对齐 Android 首版：搜索、推荐、剧场、分集、在线播放（清晰度/倍速/自动连播）、历史续播、收藏、定时停播、后台听。不做下载。"/>
+            <Border Background="#FF1C1C1F" CornerRadius="12" Padding="16">
+              <StackPanel Spacing="10">
+                <TextBlock FontWeight="SemiBold" Text="播放偏好"/>
+                <TextBlock Classes="muted" Text="定时停播（对齐 Android · 不做下载）"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock VerticalAlignment="Center" Text="定时停"/>
+                  <ComboBox Name="StopAfterBox" Width="120" SelectionChanged="OnStopAfterChanged">
+                    <ComboBoxItem Tag="0" Content="关"/>
+                    <ComboBoxItem Tag="15" Content="15 分"/>
+                    <ComboBoxItem Tag="30" Content="30 分"/>
+                    <ComboBoxItem Tag="60" Content="60 分"/>
+                  </ComboBox>
+                </StackPanel>
+                <TextBlock Name="TimerSettingsHint" Classes="muted" Text="当前：关"/>
+                <CheckBox Name="SettingsAutoNextBox" IsChecked="True" Content="自动连播下一集"
+                          Click="OnSettingsAutoNextChanged"/>
+                <TextBlock Classes="muted" TextWrapping="Wrap"
+                           Text="后台继续听：使用「隐藏继续听」或最小化窗口，音频继续。"/>
+              </StackPanel>
+            </Border>
             <Border Background="#FF1C1C1F" CornerRadius="12" Padding="16">
               <StackPanel Spacing="8">
                 <TextBlock FontWeight="SemiBold" Text="本地服务"/>

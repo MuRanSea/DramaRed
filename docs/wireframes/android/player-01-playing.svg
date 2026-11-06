@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="780" viewBox="0 0 720 780">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+</style>
+<rect width="720" height="780" fill="#08080a"/>
+
+<rect x="16" y="16" width="360" height="720" rx="26" class="phone"/><rect x="126" y="24" width="140" height="8" rx="4" fill="#222"/>
+<text x="36" y="36" class="mu xs">9:41</text><text x="340" y="36" text-anchor="end" class="mu xs">5G 100%</text>
+<text x="36" y="70" class="fg">‹</text>
+<rect x="16" y="90" width="360" height="520" class="soft"/>
+<polygon points="180,320 180,380 230,350" class="accent"/>
+<!-- overlay bottom -->
+<rect x="28" y="520" width="336" height="4" fill="#333"/>
+<rect x="28" y="520" width="140" height="4" class="accent"/>
+<text x="28" y="510" class="fg s">剧名 · 第 3 集</text>
+<text x="28" y="548" class="mu xs">02:14 / 05:00</text>
+<!-- control row -->
+<rect x="28" y="570" width="76" height="36" rx="8" class="chip"/><text x="66" y="593" text-anchor="middle" class="mu xs">清晰度</text><rect x="112" y="570" width="76" height="36" rx="8" class="chip"/><text x="150" y="593" text-anchor="middle" class="mu xs">倍速</text><rect x="196" y="570" width="76" height="36" rx="8" class="chip"/><text x="234" y="593" text-anchor="middle" class="mu xs">选集</text><rect x="280" y="570" width="76" height="36" rx="8" class="chip"/><text x="318" y="593" text-anchor="middle" class="mu xs">收藏</text>
+<text x="196" y="650" text-anchor="middle" class="mu xs">↑ 上滑下一集 · ↓ 下滑上一集 · 预加载下一集</text>
+<text x="196" y="700" text-anchor="middle" class="mu xs">切后台可听 · 定时停在设置</text>
+<text x="400" y="100" class="anno">① 竖屏全屏沉浸（无底栏）</text>
+<text x="400" y="350" class="anno">② 点画面播/暂停</text>
+<text x="400" y="520" class="anno">③ 进度条可拖</text>
+<text x="400" y="590" class="anno">④ 清晰度/倍速/选集/收藏</text>
+<text x="400" y="650" class="anno">⑤ 竖滑切集 + 预加载</text>
+<text x="400" y="700" class="anno">⑥ 定时停 → 设置页</text>
+<text x="400" y="480" class="spec">尺寸 / 控件规格</text>
+<text x="400" y="496" class="spec">画面区满宽 360</text>
+<text x="400" y="510" class="spec">控件行高 36 · 间距 8</text>
+<text x="400" y="524" class="spec">进度条高 4 · 热区 ≥24</text>
+<text x="400" y="538" class="spec">手势区整屏（避开顶/底控件）</text>
+<text x="400" y="552" class="spec">返回热区 44</text>
+
+</svg>

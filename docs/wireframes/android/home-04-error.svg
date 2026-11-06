@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="760" viewBox="0 0 720 760">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+.dim{fill:#eee;opacity:.35}
+</style>
+<rect width="720" height="760" fill="#08080a"/>
+
+<rect x="16" y="16" width="360" height="720" rx="26" class="phone"/><rect x="126" y="24" width="140" height="8" rx="4" fill="#222"/>
+<text x="36" y="36" class="mu xs">9:41</text><text x="340" y="36" text-anchor="end" class="mu xs">5G 100%</text>
+<text x="36" y="78" class="fg h">推荐</text>
+<rect x="320" y="56" width="40" height="40" rx="10" class="soft"/>
+<rect x="48" y="250" width="272" height="220" rx="14" class="panel"/>
+<text x="184" y="300" text-anchor="middle" class="warn s">推荐加载失败</text>
+<text x="184" y="328" text-anchor="middle" class="mu xs">网络不稳或上游繁忙</text>
+<text x="184" y="348" text-anchor="middle" class="mu xs">（勿直接甩 HTTP 502 原文）</text>
+<rect x="100" y="380" width="168" height="40" rx="20" class="accent"/>
+<text x="184" y="405" text-anchor="middle" class="s" fill="#111">立即重试</text>
+<rect x="16" y="676" width="360" height="60" class="bar"/>
+<circle cx="76" cy="694" r="7" fill="none" stroke="#ff4d4f" stroke-width="2"/>
+<text x="76" y="718" text-anchor="middle" class="s" fill="#ff4d4f">首页</text>
+<circle cx="196" cy="694" r="7" fill="none" stroke="#888" stroke-width="2"/>
+<text x="196" y="718" text-anchor="middle" class="s" fill="#888">剧场</text>
+<circle cx="316" cy="694" r="7" fill="none" stroke="#888" stroke-width="2"/>
+<text x="316" y="718" text-anchor="middle" class="s" fill="#888">我的</text>
+<text x="400" y="280" class="anno">状态：Error（与 Empty 文案分开）</text>
+<text x="400" y="348" class="anno">中文友好错误</text>
+<text x="400" y="405" class="anno">主操作：立即重试</text>
+<text x="400" y="450" class="anno">daemon 空页降级见 docs</text>
+<text x="400" y="520" class="spec">尺寸 / 控件规格</text>
+<text x="400" y="536" class="spec">同 Empty 卡片规格</text>
+<text x="400" y="550" class="spec">重试热区 ≥40 高</text>
+
+</svg>

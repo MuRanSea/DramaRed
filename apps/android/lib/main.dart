@@ -47,10 +47,10 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   int _index = 0;
 
-  static const _pages = <Widget>[
-    HomePage(),
-    TheaterPage(),
-    MinePage(),
+  late final _pages = <Widget>[
+    HomePage(onOpenTheater: () => setState(() => _index = 1)),
+    const TheaterPage(),
+    const MinePage(),
   ];
 
   bool get _mine => _index == 2;
@@ -113,7 +113,7 @@ class _HgBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 56,
+          height: 60,
           child: Row(
             children: [
               for (var i = 0; i < items.length; i++)

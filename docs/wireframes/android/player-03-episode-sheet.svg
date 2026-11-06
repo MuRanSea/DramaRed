@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="780" viewBox="0 0 720 780">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+</style>
+<rect width="720" height="780" fill="#08080a"/>
+
+<rect x="16" y="16" width="360" height="720" rx="26" class="phone"/><rect x="126" y="24" width="140" height="8" rx="4" fill="#222"/>
+<text x="36" y="36" class="mu xs">9:41</text><text x="340" y="36" text-anchor="end" class="mu xs">5G 100%</text>
+<rect x="16" y="90" width="360" height="320" class="soft" opacity=".5"/>
+<!-- sheet -->
+<rect x="16" y="400" width="360" height="336" rx="16" class="panel"/>
+<text x="196" y="436" text-anchor="middle" class="fg s">选集 · 共 80 集</text>
+<rect x="36" y="460" width="48" height="40" rx="8" class="chip"/><text x="60" y="485" text-anchor="middle" class="mu xs">1</text><rect x="92" y="460" width="48" height="40" rx="8" class="chip"/><text x="116" y="485" text-anchor="middle" class="mu xs">2</text><rect x="148" y="460" width="48" height="40" rx="8" class="chip"/><text x="172" y="485" text-anchor="middle" class="mu xs">3</text><rect x="204" y="460" width="48" height="40" rx="8" class="chip"/><text x="228" y="485" text-anchor="middle" class="mu xs">4</text><rect x="260" y="460" width="48" height="40" rx="8" class="chip"/><text x="284" y="485" text-anchor="middle" class="mu xs">5</text><rect x="316" y="460" width="48" height="40" rx="8" class="chip"/><text x="340" y="485" text-anchor="middle" class="mu xs">6</text><rect x="36" y="512" width="48" height="40" rx="8" class="chip"/><text x="60" y="537" text-anchor="middle" class="mu xs">7</text><rect x="92" y="512" width="48" height="40" rx="8" class="chip"/><text x="116" y="537" text-anchor="middle" class="mu xs">8</text><rect x="148" y="512" width="48" height="40" rx="8" class="chip"/><text x="172" y="537" text-anchor="middle" class="mu xs">9</text><rect x="204" y="512" width="48" height="40" rx="8" class="chip"/><text x="228" y="537" text-anchor="middle" class="mu xs">10</text><rect x="260" y="512" width="48" height="40" rx="8" class="chip"/><text x="284" y="537" text-anchor="middle" class="mu xs">11</text><rect x="316" y="512" width="48" height="40" rx="8" class="chip"/><text x="340" y="537" text-anchor="middle" class="mu xs">12</text><rect x="36" y="564" width="48" height="40" rx="8" class="chip"/><text x="60" y="589" text-anchor="middle" class="mu xs">13</text><rect x="92" y="564" width="48" height="40" rx="8" class="chip"/><text x="116" y="589" text-anchor="middle" class="mu xs">14</text><rect x="148" y="564" width="48" height="40" rx="8" class="chip"/><text x="172" y="589" text-anchor="middle" class="mu xs">15</text><rect x="204" y="564" width="48" height="40" rx="8" class="chip"/><text x="228" y="589" text-anchor="middle" class="mu xs">16</text><rect x="260" y="564" width="48" height="40" rx="8" class="chip"/><text x="284" y="589" text-anchor="middle" class="mu xs">17</text><rect x="316" y="564" width="48" height="40" rx="8" class="chip"/><text x="340" y="589" text-anchor="middle" class="mu xs">18</text>
+<rect x="36" y="460" width="48" height="40" rx="8" class="accent"/>
+<text x="60" y="485" text-anchor="middle" class="xs" fill="#111">1</text>
+<text x="400" y="420" class="anno">选集半屏 sheet</text>
+<text x="400" y="485" class="anno">当前集高亮</text>
+<text x="400" y="560" class="anno">点集号 → 切集并关 sheet</text>
+<text x="400" y="620" class="spec">尺寸 / 控件规格</text>
+<text x="400" y="636" class="spec">sheet 圆角顶 16</text>
+<text x="400" y="650" class="spec">集芯片 48×40</text>
+<text x="400" y="664" class="spec">网格 6 列 · 间距 8</text>
+
+</svg>

@@ -11,7 +11,10 @@ import '../widgets/status_pane.dart';
 
 /// 首页：竖滑换剧的推荐流。点封面进入播放页后再切集。
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.onOpenTheater});
+
+  /// 空态「去剧场逛逛」回调（由 RootShell 切到底栏剧场）。
+  final VoidCallback? onOpenTheater;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -47,15 +50,21 @@ class _HomePageState extends State<HomePage> {
           if (snap.connectionState != ConnectionState.done) {
             body = const Center(child: CircularProgressIndicator());
           } else if (snap.hasError) {
-            body = StatusPane.error(error: snap.error, onRetry: _reload);
+            body = StatusPane(
+              title: '推荐加载失败',
+              detail: StatusPane.friendlyError(snap.error),
+              actionLabel: '立即重试',
+              onAction: _reload,
+              icon: Icons.wifi_tethering_error_rounded,
+            );
           } else {
             final items = snap.data?.items ?? const <SeriesSummary>[];
             if (items.isEmpty) {
               body = StatusPane.empty(
                 title: '暂时没有推荐',
                 detail: '可以下拉刷新，或去剧场找剧。',
-                actionLabel: '刷新',
-                onAction: _reload,
+                actionLabel: widget.onOpenTheater != null ? '去剧场逛逛' : '刷新',
+                onAction: widget.onOpenTheater ?? _reload,
               );
             } else {
               body = PageView.builder(
@@ -123,7 +132,7 @@ class _TopBar extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 48,
+          height: 56,
           child: Row(
             children: [
               const SizedBox(width: 16),
@@ -146,11 +155,17 @@ class _TopBar extends StatelessWidget {
                   ),
                 ],
               ),
-              IconButton(
-                tooltip: '搜索',
-                icon: const Icon(Icons.search, color: Colors.white),
-                onPressed: onSearch,
+              const Spacer(),
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                  tooltip: '搜索',
+                  icon: const Icon(Icons.search, color: Colors.white),
+                  onPressed: onSearch,
+                ),
               ),
+              const SizedBox(width: 8),
             ],
           ),
         ),

@@ -42,7 +42,7 @@ class _SearchPageState extends State<SearchPage> {
           autofocus: true,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            hintText: '搜索短剧',
+            hintText: '搜剧名 / 关键词',
             hintStyle: TextStyle(color: Colors.white54),
             border: InputBorder.none,
           ),
@@ -80,8 +80,8 @@ class _SearchPageState extends State<SearchPage> {
                   return StatusPane.empty(
                     title: '没有找到相关短剧',
                     detail: '换个关键词试试，或去剧场浏览推荐。',
-                    actionLabel: '重新搜索',
-                    onAction: () => _run(_controller.text),
+                    actionLabel: '去剧场逛逛',
+                    onAction: () => Navigator.of(context).maybePop(),
                   );
                 }
                 return GridView.builder(

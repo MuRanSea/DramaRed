@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="760" viewBox="0 0 720 760">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+.dim{fill:#eee;opacity:.35}
+</style>
+<rect width="720" height="760" fill="#08080a"/>
+
+<rect x="16" y="16" width="360" height="720" rx="26" class="phone"/><rect x="126" y="24" width="140" height="8" rx="4" fill="#222"/>
+<text x="36" y="36" class="mu xs">9:41</text><text x="340" y="36" text-anchor="end" class="mu xs">5G 100%</text>
+<text x="196" y="78" text-anchor="middle" class="fg h">我的</text>
+<rect x="28" y="100" width="336" height="160" rx="14" class="panel"/>
+<text x="44" y="128" class="fg s">历史续播</text>
+<text x="196" y="180" text-anchor="middle" class="mu s">还没有观看记录</text>
+<text x="196" y="204" text-anchor="middle" class="mu xs">去首页或剧场点开一部短剧</text>
+<rect x="28" y="284" width="336" height="56" rx="14" class="panel"/>
+<text x="44" y="318" class="fg s">★ 收藏</text>
+<rect x="28" y="356" width="336" height="56" rx="14" class="panel"/>
+<text x="44" y="390" class="fg s">⚙ 设置</text>
+<rect x="16" y="676" width="360" height="60" class="bar"/>
+<circle cx="76" cy="694" r="7" fill="none" stroke="#888" stroke-width="2"/>
+<text x="76" y="718" text-anchor="middle" class="s" fill="#888">首页</text>
+<circle cx="196" cy="694" r="7" fill="none" stroke="#888" stroke-width="2"/>
+<text x="196" y="718" text-anchor="middle" class="s" fill="#888">剧场</text>
+<circle cx="316" cy="694" r="7" fill="none" stroke="#ff4d4f" stroke-width="2"/>
+<text x="316" y="718" text-anchor="middle" class="s" fill="#ff4d4f">我的</text>
+<text x="400" y="180" class="anno">历史 Empty 局部空态</text>
+<text x="400" y="204" class="anno">引导去首页/剧场</text>
+<text x="400" y="390" class="anno">设置仍可达</text>
+<text x="400" y="520" class="spec">尺寸 / 控件规格</text>
+<text x="400" y="536" class="spec">局部空态不挡设置入口</text>
+
+</svg>
