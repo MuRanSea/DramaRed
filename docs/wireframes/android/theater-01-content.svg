@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="760" viewBox="0 0 720 760">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+.dim{fill:#eee;opacity:.35}
+</style>
+<rect width="720" height="760" fill="#08080a"/>
+
+<rect x="16" y="16" width="360" height="720" rx="26" class="phone"/><rect x="126" y="24" width="140" height="8" rx="4" fill="#222"/>
+<text x="36" y="36" class="mu xs">9:41</text><text x="340" y="36" text-anchor="end" class="mu xs">5G 100%</text>
+<text x="196" y="78" text-anchor="middle" class="fg h">剧场</text>
+<rect x="28" y="100" width="104" height="150" rx="10" class="soft"/><rect x="28" y="256" width="80" height="8" rx="3" class="chip"/><rect x="140" y="100" width="104" height="150" rx="10" class="soft"/><rect x="140" y="256" width="80" height="8" rx="3" class="chip"/><rect x="252" y="100" width="104" height="150" rx="10" class="soft"/><rect x="252" y="256" width="80" height="8" rx="3" class="chip"/><rect x="28" y="290" width="104" height="150" rx="10" class="soft"/><rect x="28" y="446" width="80" height="8" rx="3" class="chip"/><rect x="140" y="290" width="104" height="150" rx="10" class="soft"/><rect x="140" y="446" width="80" height="8" rx="3" class="chip"/><rect x="252" y="290" width="104" height="150" rx="10" class="soft"/><rect x="252" y="446" width="80" height="8" rx="3" class="chip"/><rect x="28" y="480" width="104" height="150" rx="10" class="soft"/><rect x="28" y="636" width="80" height="8" rx="3" class="chip"/><rect x="140" y="480" width="104" height="150" rx="10" class="soft"/><rect x="140" y="636" width="80" height="8" rx="3" class="chip"/><rect x="252" y="480" width="104" height="150" rx="10" class="soft"/><rect x="252" y="636" width="80" height="8" rx="3" class="chip"/>
+<rect x="16" y="676" width="360" height="60" class="bar"/>
+<circle cx="76" cy="694" r="7" fill="none" stroke="#888" stroke-width="2"/>
+<text x="76" y="718" text-anchor="middle" class="s" fill="#888">首页</text>
+<circle cx="196" cy="694" r="7" fill="none" stroke="#ff4d4f" stroke-width="2"/>
+<text x="196" y="718" text-anchor="middle" class="s" fill="#ff4d4f">剧场</text>
+<circle cx="316" cy="694" r="7" fill="none" stroke="#888" stroke-width="2"/>
+<text x="316" y="718" text-anchor="middle" class="s" fill="#888">我的</text>
+<text x="400" y="100" class="anno">① 三列瀑布流封面</text>
+<text x="400" y="160" class="anno">② 点封面 → 播放</text>
+<text x="400" y="256" class="anno">③ 标题一行截断</text>
+<text x="400" y="700" class="anno">④ 可下拉刷新 / 上拉加载更多</text>
+<text x="400" y="500" class="spec">尺寸 / 控件规格</text>
+<text x="400" y="516" class="spec">列间距 8 / 左右边距 12</text>
+<text x="400" y="530" class="spec">封面宽 104 · 高≈150 (约 2:3)</text>
+<text x="400" y="544" class="spec">圆角 10</text>
+<text x="400" y="558" class="spec">标题 11–12sp 单行</text>
+
+</svg>

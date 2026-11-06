@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="780" viewBox="0 0 720 780">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+</style>
+<rect width="720" height="780" fill="#08080a"/>
+
+<rect x="16" y="16" width="360" height="720" rx="26" class="phone"/><rect x="126" y="24" width="140" height="8" rx="4" fill="#222"/>
+<text x="36" y="36" class="mu xs">9:41</text><text x="340" y="36" text-anchor="end" class="mu xs">5G 100%</text>
+<text x="36" y="70" class="fg h">播放控件明细</text>
+<!-- clarity pop -->
+<rect x="28" y="100" width="160" height="140" rx="12" class="panel"/>
+<text x="44" y="128" class="fg s">清晰度</text>
+<text x="44" y="156" class="mu s">720P</text><text x="44" y="184" class="mu s">1080P ✓</text><text x="44" y="212" class="mu s">自动</text>
+<!-- speed -->
+<rect x="200" y="100" width="160" height="160" rx="12" class="panel"/>
+<text x="216" y="128" class="fg s">倍速</text>
+<text x="216" y="156" class="mu s">0.75x</text><text x="216" y="184" class="mu s">1.0x ✓</text><text x="216" y="212" class="mu s">1.25x</text><text x="216" y="240" class="mu s">1.5x</text><text x="216" y="268" class="mu s">2.0x</text>
+<rect x="28" y="290" width="336" height="120" rx="12" class="panel"/>
+<text x="44" y="320" class="fg s">不在本页</text>
+<text x="44" y="348" class="mu s">· 定时停播 → 设置</text>
+<text x="44" y="372" class="mu s">· 后台继续听 → 设置（系统切后台仍听）</text>
+<text x="400" y="120" class="anno">弹出菜单锚点在控件行</text>
+<text x="400" y="320" class="anno">定时/后台不堆播放页</text>
+<text x="400" y="400" class="anno">收藏 toggle 即时反馈</text>
+<text x="400" y="520" class="spec">尺寸 / 控件规格</text>
+<text x="400" y="536" class="spec">菜单项高 28–32</text>
+<text x="400" y="550" class="spec">菜单宽 ≥140</text>
+<text x="400" y="564" class="spec">选中用 ✓ 或强调色</text>
+
+</svg>

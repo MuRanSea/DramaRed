@@ -1,32 +1,31 @@
 # DramaRed 应用图标方案
 
-> 一版主稿，已尽量落入 Android mipmap 与 Windows `.ico`。确认前可随时换稿。
+> 按反馈采用 **小番茄** 风格。已更新 master / Android mipmap / Windows `app.ico`。
 
 ## 概念
 
-- 名称联想：**Drama**（竖屏短剧）+ **Red**（强调色）。
-- 图形：深炭黑圆角底 + 霓虹红「竖屏手机框」+ 中央播放三角 + 两侧胶片点。
-- 风格：扁平、高对比、少字，适合小尺寸识别。
+- 一只圆润小番茄（红果联想）+ 绿色蒂，深炭黑圆角底。
+- 扁平可爱、少细节，小尺寸仍可辨。
+- **不再使用**「竖屏框 + 播放三角」旧稿。
 
-## 主稿文件
+## 主稿
 
 | 文件 | 说明 |
 |---|---|
-| [wireframes/icon/dramared-icon-master.png](./wireframes/icon/dramared-icon-master.png) | 1024×1024 主 PNG |
-| [wireframes/icon/dramared-icon-master.jpg](./wireframes/icon/dramared-icon-master.jpg) | 生成原图 |
+| [wireframes/icon/dramared-icon-master.png](./wireframes/icon/dramared-icon-master.png) | 1024×1024 主 PNG（小番茄） |
+| [wireframes/icon/dramared-icon-tomato.png](./wireframes/icon/dramared-icon-tomato.png) | 同主稿副本 |
 | [wireframes/icon/app-icon-512.png](./wireframes/icon/app-icon-512.png) | 预览 |
-| [wireframes/icon/app.ico](./wireframes/icon/app.ico) | 多尺寸 ICO 备份 |
+| [wireframes/icon/app.ico](./wireframes/icon/app.ico) | 多尺寸 ICO |
 
-## 已落入工程资源
+## 已落入工程
 
-| 端 | 路径 | 状态 |
-|---|---|---|
-| Android | `apps/android/android/app/src/main/res/mipmap-*/ic_launcher.png` | 已替换（mdpi→xxxhdpi） |
-| Desktop | `apps/desktop/ui/Assets/app.ico` | 已写入；`DramaRed.UI.csproj` 增加 `ApplicationIcon` |
+| 端 | 路径 |
+|---|---|
+| Android | `apps/android/android/app/src/main/res/mipmap-*/ic_launcher.png` |
+| Desktop | `apps/desktop/ui/Assets/app.ico`（`ApplicationIcon`） |
 
-## 下一步（确认图标后再做）
+## 下一步（确认后）
 
-1. Android adaptive icon（`mipmap-anydpi-v26` foreground/background 分层），避免圆角被系统再裁。
-2. 通知栏小图标（单色 silhouette）。
-3. Windows 安装包 / 快捷方式沿用 `Assets/app.ico`；macOS 另出 `.icns`（跨平台后续）。
-4. 若你要换配色或加字标「剧」，在主稿上改一版再批量导出。
+1. Android adaptive icon 分层（前景番茄 / 背景深色）。
+2. 通知栏单色剪影。
+3. macOS `.icns`。

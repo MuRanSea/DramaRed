@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="700" viewBox="0 0 1180 700">
+<style>
+.bg{fill:#0f0f10}.phone{fill:#111114;stroke:#3a3a40;stroke-width:2}
+.bar{fill:#16161a}.panel{fill:#1c1c22;stroke:#2e2e36;stroke-width:1.2}
+.soft{fill:#24242c;stroke:#353540;stroke-width:1}
+.chip{fill:#2a2a32;stroke:#3d3d48}
+.accent{fill:#ff4d4f}.ok{fill:#3dd68c}.warn{fill:#ffb020}
+.fg{fill:#eee;font-family:ui-sans-serif,system-ui,sans-serif}.mu{fill:#9a9aa3;font-family:ui-sans-serif,system-ui,sans-serif}
+.anno{fill:#ffb020;font-family:ui-sans-serif,system-ui,sans-serif;font-size:11px}
+.spec{fill:#7db7ff;font-family:ui-monospace,monospace;font-size:10px}
+.h{font-size:14px;font-weight:700}.s{font-size:11px}.xs{font-size:10px}
+.dash{fill:none;stroke:#ffb020;stroke-width:1;stroke-dasharray:3 2}
+</style>
+<rect width="1180" height="700" fill="#08080a"/>
+
+
+<rect x="16" y="16" width="900" height="640" rx="10" class="phone"/>
+<rect x="16" y="16" width="900" height="36" class="bar"/>
+<text x="36" y="40" class="fg s">DramaRed</text>
+<rect x="16" y="52" width="180" height="604" fill="#121214"/>
+<rect x="28" y="80" width="160" height="40" rx="8" fill="#121214"/><text x="48" y="105" class="s" fill="#ccc">推荐</text><rect x="28" y="128" width="160" height="40" rx="8" fill="#121214"/><text x="48" y="153" class="s" fill="#ccc">剧场</text><rect x="28" y="176" width="160" height="40" rx="8" fill="#121214"/><text x="48" y="201" class="s" fill="#ccc">搜索</text><rect x="28" y="224" width="160" height="40" rx="8" fill="#2a1a1a"/><text x="48" y="249" class="s" fill="#ff4d4f">播放</text><rect x="28" y="272" width="160" height="40" rx="8" fill="#121214"/><text x="48" y="297" class="s" fill="#ccc">历史</text><rect x="28" y="320" width="160" height="40" rx="8" fill="#121214"/><text x="48" y="345" class="s" fill="#ccc">收藏</text><rect x="28" y="368" width="160" height="40" rx="8" fill="#121214"/><text x="48" y="393" class="s" fill="#ccc">设置</text>
+
+<!-- 9:16 -->
+<rect x="230" y="70" width="270" height="480" rx="12" class="soft"/>
+<text x="365" y="290" text-anchor="middle" class="mu s">9:16 预览</text>
+<polygon points="350,320 350,360 385,340" class="accent"/>
+<rect x="240" y="500" width="250" height="4" fill="#333"/>
+<rect x="240" y="500" width="100" height="4" class="accent"/>
+<!-- right -->
+<rect x="520" y="70" width="370" height="540" rx="12" class="panel"/>
+<text x="540" y="105" class="fg h">剧名 · 第 3 / 80</text>
+<text x="540" y="135" class="mu s">选集</text>
+<rect x="540" y="150" width="48" height="36" rx="8" class="chip"/><text x="564" y="173" text-anchor="middle" class="mu xs">1</text><rect x="596" y="150" width="48" height="36" rx="8" class="chip"/><text x="620" y="173" text-anchor="middle" class="mu xs">2</text><rect x="652" y="150" width="48" height="36" rx="8" class="chip"/><text x="676" y="173" text-anchor="middle" class="mu xs">3</text><rect x="708" y="150" width="48" height="36" rx="8" class="chip"/><text x="732" y="173" text-anchor="middle" class="mu xs">4</text><rect x="764" y="150" width="48" height="36" rx="8" class="chip"/><text x="788" y="173" text-anchor="middle" class="mu xs">5</text><rect x="820" y="150" width="48" height="36" rx="8" class="chip"/><text x="844" y="173" text-anchor="middle" class="mu xs">6</text><rect x="540" y="194" width="48" height="36" rx="8" class="chip"/><text x="564" y="217" text-anchor="middle" class="mu xs">7</text><rect x="596" y="194" width="48" height="36" rx="8" class="chip"/><text x="620" y="217" text-anchor="middle" class="mu xs">8</text><rect x="652" y="194" width="48" height="36" rx="8" class="chip"/><text x="676" y="217" text-anchor="middle" class="mu xs">9</text><rect x="708" y="194" width="48" height="36" rx="8" class="chip"/><text x="732" y="217" text-anchor="middle" class="mu xs">10</text><rect x="764" y="194" width="48" height="36" rx="8" class="chip"/><text x="788" y="217" text-anchor="middle" class="mu xs">11</text><rect x="820" y="194" width="48" height="36" rx="8" class="chip"/><text x="844" y="217" text-anchor="middle" class="mu xs">12</text>
+<text x="540" y="280" class="mu s">清晰度 / 倍速 / 连播 / 收藏</text>
+<rect x="540" y="295" width="80" height="32" rx="8" class="chip"/><text x="580" y="316" text-anchor="middle" class="mu xs">1080P</text><rect x="628" y="295" width="80" height="32" rx="8" class="chip"/><text x="668" y="316" text-anchor="middle" class="mu xs">1.0x</text><rect x="716" y="295" width="80" height="32" rx="8" class="chip"/><text x="756" y="316" text-anchor="middle" class="mu xs">连播</text><rect x="804" y="295" width="80" height="32" rx="8" class="chip"/><text x="844" y="316" text-anchor="middle" class="mu xs">收藏</text>
+<text x="540" y="370" class="mu xs">定时停 → 设置 · 隐藏窗口继续听</text>
+<text x="540" y="420" class="anno">键盘：Space 播停 · ↑↓切集 · ←→快进 · M 静音 · Esc</text>
+
+
+<text x="940" y="100" class="anno">① 左栏固定 9:16，勿拉成 16:9</text>
+<text x="940" y="200" class="anno">② 右栏选集网格</text>
+<text x="940" y="310" class="anno">③ 播放控件</text>
+<text x="940" y="420" class="anno">④ 快捷键对齐移动手势</text>
+<text x="940" y="500" class="spec">尺寸 / 控件规格</text>
+<text x="940" y="516" class="spec">预览宽 270 · 高 480 (=9:16)</text>
+<text x="940" y="530" class="spec">右栏宽 ≥360</text>
+<text x="940" y="544" class="spec">集芯片 48×36</text>
+<text x="940" y="558" class="spec">控件高 32</text>
+<text x="940" y="572" class="spec">侧栏仍 180</text>
+
+</svg>

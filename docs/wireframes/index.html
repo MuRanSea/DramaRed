@@ -2,61 +2,37 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
-<title>DramaRed Wireframes</title>
+<title>DramaRed Wireframes · Detailed</title>
 <style>
-  body{margin:0;font-family:system-ui,sans-serif;background:#0a0a0b;color:#eee}
-  header{padding:24px 32px;border-bottom:1px solid #222}
-  h1{margin:0 0 8px;font-size:20px}
-  p{margin:0;color:#999;font-size:14px}
-  main{padding:24px 32px;display:grid;gap:32px}
-  section h2{font-size:16px;margin:0 0 12px;color:#ff4d4f}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-  figure{margin:0;background:#141416;border:1px solid #2a2a2e;border-radius:12px;overflow:hidden}
-  figure img,figure object{width:100%;display:block;background:#0f0f10}
-  figcaption{padding:10px 12px;font-size:13px;color:#ccc}
-  a{color:#ffb020}
-  .note{font-size:12px;color:#888;margin-top:8px}
+body{margin:0;font-family:system-ui,sans-serif;background:#0a0a0b;color:#eee}
+header{padding:24px 32px;border-bottom:1px solid #222}
+h1{margin:0 0 8px;font-size:20px}
+p{margin:0;color:#999;font-size:14px}
+main{padding:24px 32px}
+h2{font-size:16px;color:#ff4d4f;margin:28px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+figure{margin:0;background:#141416;border:1px solid #2a2a2e;border-radius:12px;overflow:hidden}
+object{width:100%;display:block;background:#0f0f10}
+figcaption{padding:10px 12px;font-size:12px;color:#ccc;word-break:break-all}
+a{color:#ffb020}
+.icon{width:128px;height:128px;border-radius:28px}
 </style>
 </head>
 <body>
 <header>
-  <h1>DramaRed 页面原型</h1>
-  <p>权威以 *-ia.svg 与 README 标注为准 · 视觉 JPG 仅作气氛参考 · 待你确认后再改功能 UI</p>
+  <h1>DramaRed 详细线框</h1>
+  <p>权威 SVG 多状态 · 含尺寸与交互标注 · 图标：小番茄 · <a href="README.md">README</a> · <a href="../app-icon.md">app-icon</a></p>
+  <p style="margin-top:12px"><img class="icon" src="icon/app-icon-512.png" alt="tomato icon"/></p>
 </header>
 <main>
-  <section>
-    <h2>Android IA 线框</h2>
-    <div class="grid">
-      <figure><object data="android/home-ia.svg" type="image/svg+xml" height="360"></object><figcaption>首页 · 竖滑换剧</figcaption></figure>
-      <figure><object data="android/theater-ia.svg" type="image/svg+xml" height="360"></object><figcaption>剧场 · 瀑布流</figcaption></figure>
-      <figure><object data="android/mine-ia.svg" type="image/svg+xml" height="360"></object><figcaption>我的 · 历史/收藏/设置</figcaption></figure>
-      <figure><object data="android/search-ia.svg" type="image/svg+xml" height="360"></object><figcaption>搜索</figcaption></figure>
-      <figure><object data="android/player-ia.svg" type="image/svg+xml" height="360"></object><figcaption>播放 · 上下滑切集</figcaption></figure>
-      <figure><object data="android/settings-ia.svg" type="image/svg+xml" height="360"></object><figcaption>设置 · 定时停</figcaption></figure>
-    </div>
-  </section>
-  <section>
-    <h2>Desktop IA 线框</h2>
-    <div class="grid">
-      <figure><object data="desktop/shell-ia.svg" type="image/svg+xml" height="280"></object><figcaption>侧栏壳 + 海报网格</figcaption></figure>
-      <figure><object data="desktop/player-ia.svg" type="image/svg+xml" height="280"></object><figcaption>播放双栏 9:16 + 旁侧控件</figcaption></figure>
-    </div>
-  </section>
-  <section>
-    <h2>视觉参考 JPG（有偏差时以 SVG 为准）</h2>
-    <div class="grid">
-      <figure><img src="android/home.jpg" alt="home"/><figcaption>home.jpg</figcaption></figure>
-      <figure><img src="android/theater.jpg" alt="theater"/><figcaption>theater.jpg</figcaption></figure>
-      <figure><img src="android/mine.jpg" alt="mine"/><figcaption>mine.jpg · 忽略多余 Tab</figcaption></figure>
-      <figure><img src="android/search.jpg" alt="search"/><figcaption>search.jpg</figcaption></figure>
-      <figure><img src="android/player.jpg" alt="player"/><figcaption>player.jpg</figcaption></figure>
-      <figure><img src="android/settings.jpg" alt="settings"/><figcaption>settings.jpg</figcaption></figure>
-      <figure><img src="desktop/shell.jpg" alt="shell"/><figcaption>shell.jpg</figcaption></figure>
-      <figure><img src="desktop/player.jpg" alt="dplayer"/><figcaption>player.jpg · 忽略下载项</figcaption></figure>
-      <figure><img src="icon/app-icon-512.png" alt="icon"/><figcaption>应用图标 512</figcaption></figure>
-    </div>
-    <p class="note">详见 <a href="README.md">README.md</a> · <a href="../app-icon.md">app-icon.md</a></p>
-  </section>
+  <h2>Android（22）</h2>
+  <div class="grid">
+  <figure><object data="android/home-01-content.svg" type="image/svg+xml" height="380"></object><figcaption>home-01-content.svg</figcaption></figure><figure><object data="android/home-02-loading.svg" type="image/svg+xml" height="380"></object><figcaption>home-02-loading.svg</figcaption></figure><figure><object data="android/home-03-empty.svg" type="image/svg+xml" height="380"></object><figcaption>home-03-empty.svg</figcaption></figure><figure><object data="android/home-04-error.svg" type="image/svg+xml" height="380"></object><figcaption>home-04-error.svg</figcaption></figure><figure><object data="android/mine-01-content.svg" type="image/svg+xml" height="380"></object><figcaption>mine-01-content.svg</figcaption></figure><figure><object data="android/mine-02-empty-history.svg" type="image/svg+xml" height="380"></object><figcaption>mine-02-empty-history.svg</figcaption></figure><figure><object data="android/player-01-playing.svg" type="image/svg+xml" height="380"></object><figcaption>player-01-playing.svg</figcaption></figure><figure><object data="android/player-02-loading.svg" type="image/svg+xml" height="380"></object><figcaption>player-02-loading.svg</figcaption></figure><figure><object data="android/player-03-episode-sheet.svg" type="image/svg+xml" height="380"></object><figcaption>player-03-episode-sheet.svg</figcaption></figure><figure><object data="android/player-04-error.svg" type="image/svg+xml" height="380"></object><figcaption>player-04-error.svg</figcaption></figure><figure><object data="android/player-05-controls-detail.svg" type="image/svg+xml" height="380"></object><figcaption>player-05-controls-detail.svg</figcaption></figure><figure><object data="android/search-01-default.svg" type="image/svg+xml" height="380"></object><figcaption>search-01-default.svg</figcaption></figure><figure><object data="android/search-02-loading.svg" type="image/svg+xml" height="380"></object><figcaption>search-02-loading.svg</figcaption></figure><figure><object data="android/search-03-results.svg" type="image/svg+xml" height="380"></object><figcaption>search-03-results.svg</figcaption></figure><figure><object data="android/search-04-empty.svg" type="image/svg+xml" height="380"></object><figcaption>search-04-empty.svg</figcaption></figure><figure><object data="android/search-05-error.svg" type="image/svg+xml" height="380"></object><figcaption>search-05-error.svg</figcaption></figure><figure><object data="android/settings-01-default.svg" type="image/svg+xml" height="380"></object><figcaption>settings-01-default.svg</figcaption></figure><figure><object data="android/settings-02-timer-active.svg" type="image/svg+xml" height="380"></object><figcaption>settings-02-timer-active.svg</figcaption></figure><figure><object data="android/theater-01-content.svg" type="image/svg+xml" height="380"></object><figcaption>theater-01-content.svg</figcaption></figure><figure><object data="android/theater-02-loading.svg" type="image/svg+xml" height="380"></object><figcaption>theater-02-loading.svg</figcaption></figure><figure><object data="android/theater-03-empty.svg" type="image/svg+xml" height="380"></object><figcaption>theater-03-empty.svg</figcaption></figure><figure><object data="android/theater-04-error.svg" type="image/svg+xml" height="380"></object><figcaption>theater-04-error.svg</figcaption></figure>
+  </div>
+  <h2>Desktop（9）</h2>
+  <div class="grid">
+  <figure><object data="desktop/player-01-dual.svg" type="image/svg+xml" height="300"></object><figcaption>player-01-dual.svg</figcaption></figure><figure><object data="desktop/player-02-loading.svg" type="image/svg+xml" height="300"></object><figcaption>player-02-loading.svg</figcaption></figure><figure><object data="desktop/player-03-error.svg" type="image/svg+xml" height="300"></object><figcaption>player-03-error.svg</figcaption></figure><figure><object data="desktop/player-04-empty-idle.svg" type="image/svg+xml" height="300"></object><figcaption>player-04-empty-idle.svg</figcaption></figure><figure><object data="desktop/shell-01-home-grid.svg" type="image/svg+xml" height="300"></object><figcaption>shell-01-home-grid.svg</figcaption></figure><figure><object data="desktop/shell-02-loading.svg" type="image/svg+xml" height="300"></object><figcaption>shell-02-loading.svg</figcaption></figure><figure><object data="desktop/shell-03-empty.svg" type="image/svg+xml" height="300"></object><figcaption>shell-03-empty.svg</figcaption></figure><figure><object data="desktop/shell-04-error.svg" type="image/svg+xml" height="300"></object><figcaption>shell-04-error.svg</figcaption></figure><figure><object data="desktop/shell-05-theater-search.svg" type="image/svg+xml" height="300"></object><figcaption>shell-05-theater-search.svg</figcaption></figure>
+  </div>
 </main>
 </body>
 </html>
