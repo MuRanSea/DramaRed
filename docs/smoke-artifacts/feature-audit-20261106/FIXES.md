@@ -43,3 +43,9 @@ Branch work against desktop bugs found while capturing `feature-audit-20261106` 
 ## Known follow-ups
 - Hide/restore blank window (if still reproducible) — separate from this PR.
 - SDK search relevance for nonsense queries — client cannot invent empty without lying; optional client-side relevance filter later.
+
+### 9. Nav freeze after 收藏/历史 (residual)
+- **Bug:** After visiting 收藏/历史, sidebar / top-bar / keyboard no longer changed pages (stuck on 历史) while hover still worked. Daemon stayed healthy. Timer-nav (F05b) had worked earlier.
+- **Cause:** (1) `SelectNavSilently` mutated `NavList.SelectedItem` inside `SelectionChanged` with no suppress flag — Avalonia ListBox reentrancy left input routing wedged after HistoryList focus. (2) `PlayEpisodeAsync` / fav toggle **awaited** `RefreshHistoryAsync`/`RefreshFavoritesAsync` → `EnrichSeriesAsync` (network) on the UI async path. (3) `_progressTimer` still used `async void` Tick (same class of Avalonia freeze as the old 定时停 timer). (4) `ShowPage` did not refresh library pages; when refresh was added/hit, it must never block clicks.
+- **Fix:** `_navSync` guard around silent selection; `ShowPage(history|favorites)` fire-and-forget refresh only; play/fav paths no longer await library refresh; progress timer Tick is sync + `_ = PersistProgressAsync()`; CoverLoader drains ffmpeg stdout/stderr to avoid pipe deadlock. Regression: `ShowPage_history_favorites_does_not_await_network`.
+

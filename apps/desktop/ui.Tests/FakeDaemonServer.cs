@@ -18,6 +18,8 @@ public sealed class FakeDaemonServer : IAsyncDisposable
     public string FailDiscoverMessage { get; set; } = "上游短剧服务暂时不可用（网关错误），请稍后重试";
     /// <summary>Artificial delay before answering /api/v1/discover (tests timeout UX).</summary>
     public int DiscoverDelayMs { get; set; }
+    /// <summary>Artificial delay before answering history/favorites/series batch (nav must not await).</summary>
+    public int LibraryDelayMs { get; set; }
     public bool SearchReturnsEmpty { get; set; }
 
     public FakeDaemonServer()
@@ -144,6 +146,7 @@ public sealed class FakeDaemonServer : IAsyncDisposable
 
             if (path == "/api/v1/series/batch")
             {
+                if (LibraryDelayMs > 0) Thread.Sleep(LibraryDelayMs);
                 WriteJson(ctx, 200, new
                 {
                     items = new[]
@@ -198,6 +201,7 @@ public sealed class FakeDaemonServer : IAsyncDisposable
 
             if (path == "/api/v1/history")
             {
+                if (LibraryDelayMs > 0) Thread.Sleep(LibraryDelayMs);
                 if (ctx.Request.HttpMethod == "GET")
                     WriteJson(ctx, 200, new { items = Array.Empty<object>() });
                 else
@@ -207,6 +211,7 @@ public sealed class FakeDaemonServer : IAsyncDisposable
 
             if (path == "/api/v1/favorites")
             {
+                if (LibraryDelayMs > 0) Thread.Sleep(LibraryDelayMs);
                 if (ctx.Request.HttpMethod == "GET")
                     WriteJson(ctx, 200, new { seriesIds = Array.Empty<string>() });
                 else

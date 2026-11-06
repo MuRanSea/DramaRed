@@ -33,6 +33,9 @@ public partial class MainWindow : Window
     private bool _favorited;
     private string _lastBrowsePage = "home";
     private string _currentPage = "home";
+    private bool _navSync;
+    private int _historyRefreshGen;
+    private int _favoritesRefreshGen;
     private bool _qualityApplying;
     private DispatcherTimer? _stopTimer;
     private DispatcherTimer? _progressTimer;
@@ -83,7 +86,8 @@ public partial class MainWindow : Window
 
         _player.PlaybackEnded += OnPlaybackEnded;
         _progressTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
-        _progressTimer.Tick += async (_, _) => await PersistProgressAsync();
+        // Sync Tick + fire-and-forget — async void DispatcherTimer can freeze Avalonia input.
+        _progressTimer.Tick += (_, _) => _ = PersistProgressAsync();
         _progressTimer.Start();
 
         InitTray();
@@ -160,6 +164,7 @@ public partial class MainWindow : Window
 
     private void OnNavChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (_navSync) return;
         if (NavList?.SelectedItem is not ListBoxItem item) return;
         var page = item.Tag?.ToString() ?? "home";
         ShowPage(page);
@@ -186,6 +191,12 @@ public partial class MainWindow : Window
 
         SelectNavSilently(page);
         UpdateStatusBarForPage(page);
+
+        // Never await network on the click/nav path — EnrichSeries/covers stay background.
+        if (page == "history")
+            _ = RefreshHistoryAsync();
+        else if (page == "favorites")
+            _ = RefreshFavoritesAsync();
     }
 
     private void UpdateStatusBarForPage(string page)
@@ -211,16 +222,25 @@ public partial class MainWindow : Window
 
     private void SelectNavSilently(string page)
     {
-        foreach (var obj in NavList.Items)
+        if (NavList is null) return;
+        _navSync = true;
+        try
         {
-            if (obj is ListBoxItem item && item.Tag?.ToString() == page)
+            foreach (var obj in NavList.Items)
             {
-                if (!Equals(NavList.SelectedItem, item))
+                if (obj is ListBoxItem item && item.Tag?.ToString() == page)
                 {
-                    NavList.SelectedItem = item;
+                    if (!Equals(NavList.SelectedItem, item))
+                    {
+                        NavList.SelectedItem = item;
+                    }
+                    break;
                 }
-                break;
             }
+        }
+        finally
+        {
+            _navSync = false;
         }
     }
 
@@ -557,7 +577,8 @@ public partial class MainWindow : Window
                 PositionMs = seekMs,
                 UpdatedAt = DateTimeOffset.UtcNow,
             });
-            await RefreshHistoryAsync();
+            // Fire-and-forget: EnrichSeries/batch must not block playback or later nav clicks.
+            _ = RefreshHistoryAsync();
             _ = PrefetchNextAsync();
         }
         catch (Exception ex)
@@ -889,7 +910,7 @@ public partial class MainWindow : Window
                 _favorited = true;
             }
             UpdateFavButton();
-            await RefreshFavoritesAsync();
+            _ = RefreshFavoritesAsync();
             StatusBar.Text = _favorited ? $"已收藏 {_currentSeries.Title}" : $"已取消收藏 {_currentSeries.Title}";
         }
         catch (Exception ex)
@@ -926,11 +947,14 @@ public partial class MainWindow : Window
 
     private async Task RefreshHistoryAsync()
     {
+        var gen = Interlocked.Increment(ref _historyRefreshGen);
         try
         {
             var page = await _daemon.HistoryListAsync();
+            if (gen != _historyRefreshGen) return;
             var items = page?.Items?.ToList() ?? new List<HistoryItem>();
             await EnrichSeriesAsync(items.Select(h => h.SeriesId));
+            if (gen != _historyRefreshGen) return;
             _history.Clear();
             foreach (var h in items)
             {
@@ -955,18 +979,22 @@ public partial class MainWindow : Window
         }
         catch
         {
+            if (gen != _historyRefreshGen) return;
             if (HistoryEmpty != null) HistoryEmpty.IsVisible = _history.Count == 0;
         }
     }
 
     private async Task RefreshFavoritesAsync()
     {
+        var gen = Interlocked.Increment(ref _favoritesRefreshGen);
         try
         {
             var page = await _daemon.FavoritesListAsync();
-            _favorites.Clear();
+            if (gen != _favoritesRefreshGen) return;
             var ids = page?.SeriesIds ?? new List<string>();
             await EnrichSeriesAsync(ids);
+            if (gen != _favoritesRefreshGen) return;
+            _favorites.Clear();
             FavoritesHint.Text = ids.Count == 0 ? "还没有收藏" : $"共 {ids.Count} 部";
             if (FavoritesEmpty != null) FavoritesEmpty.IsVisible = ids.Count == 0;
             foreach (var id in ids)
@@ -983,6 +1011,7 @@ public partial class MainWindow : Window
         }
         catch
         {
+            if (gen != _favoritesRefreshGen) return;
             FavoritesHint.Text = "无法读取收藏（本地服务未响应）";
             if (FavoritesEmpty != null) FavoritesEmpty.IsVisible = _favorites.Count == 0;
         }
